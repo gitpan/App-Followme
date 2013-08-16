@@ -1,0 +1,74 @@
+{
+   "abstract" : "Simple static web site maintenance",
+   "author" : [
+      "Bernie Simon <bernie.simon@gmail.com>"
+   ],
+   "dynamic_config" : 0,
+   "generated_by" : "Minilla/v0.4.2",
+   "license" : "perl_5",
+   "meta-spec" : {
+      "url" : "http://search.cpan.org/perldoc?CPAN::Meta::Spec",
+      "version" : "2"
+   },
+   "name" : "App-Followme",
+   "no_index" : {
+      "directory" : [
+         "t",
+         "xt",
+         "inc",
+         "share",
+         "eg",
+         "examples",
+         "author"
+      ]
+   },
+   "prereqs" : {
+      "configure" : {
+         "requires" : {
+            "CPAN::Meta" : "0",
+            "CPAN::Meta::Prereqs" : "0",
+            "Module::Build" : "0.38"
+         }
+      },
+      "develop" : {
+         "requires" : {
+            "Test::CPAN::Meta" : "0",
+            "Test::MinimumVersion" : "0.10108",
+            "Test::Pod" : "1.41",
+            "Test::Spellunker" : "v0.2.2"
+         }
+      },
+      "runtime" : {
+         "requires" : {
+            "perl" : "5.008005"
+         }
+      },
+      "test" : {
+         "requires" : {
+            "Test::More" : "0.98"
+         }
+      }
+   },
+   "provides" : {
+      "App::Followme" : {
+         "file" : "lib/App/Followme.pm",
+         "version" : "0.76"
+      },
+      "App::FollowmeSite" : {
+         "file" : "lib/App/FollowmeSite.pm",
+         "version" : "0.76"
+      }
+   },
+   "release_status" : "stable",
+   "resources" : {
+      "bugtracker" : {
+         "web" : "https://github.com/Jinzang/App-Followme/issues"
+      },
+      "homepage" : "https://github.com/Jinzang/App-Followme",
+      "repository" : {
+         "url" : "https://github.com/Jinzang/App-Followme.git",
+         "web" : "https://github.com/Jinzang/App-Followme"
+      }
+   },
+   "version" : "0.76"
+}

@@ -1,0 +1,40 @@
+---
+abstract: 'Simple static web site maintenance'
+author:
+  - 'Bernie Simon <bernie.simon@gmail.com>'
+build_requires:
+  Test::More: 0.98
+configure_requires:
+  CPAN::Meta: 0
+  CPAN::Meta::Prereqs: 0
+  Module::Build: 0.38
+dynamic_config: 0
+generated_by: 'Minilla/v0.4.2, CPAN::Meta::Converter version 2.130880'
+license: perl
+meta-spec:
+  url: http://module-build.sourceforge.net/META-spec-v1.4.html
+  version: 1.4
+name: App-Followme
+no_index:
+  directory:
+    - t
+    - xt
+    - inc
+    - share
+    - eg
+    - examples
+    - author
+provides:
+  App::Followme:
+    file: lib/App/Followme.pm
+    version: 0.76
+  App::FollowmeSite:
+    file: lib/App/FollowmeSite.pm
+    version: 0.76
+requires:
+  perl: 5.008005
+resources:
+  bugtracker: https://github.com/Jinzang/App-Followme/issues
+  homepage: https://github.com/Jinzang/App-Followme
+  repository: https://github.com/Jinzang/App-Followme.git
+version: 0.76
