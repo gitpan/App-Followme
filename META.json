@@ -52,11 +52,11 @@
    "provides" : {
       "App::Followme" : {
          "file" : "lib/App/Followme.pm",
-         "version" : "0.78"
+         "version" : "0.79"
       },
       "App::FollowmeSite" : {
          "file" : "lib/App/FollowmeSite.pm",
-         "version" : "0.78"
+         "version" : "0.79"
       }
    },
    "release_status" : "stable",
@@ -70,5 +70,5 @@
          "web" : "https://github.com/Jinzang/App-Followme"
       }
    },
-   "version" : "0.78"
+   "version" : "0.79"
 }

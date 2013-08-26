@@ -7,7 +7,6 @@ cpanfile
 lib/App/Followme.pm
 lib/App/FollowmeSite.pm
 script/followme
-t/00_compile.t
 t/Followme.t
 t/FollowmeSite.t
 META.yml
