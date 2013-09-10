@@ -12,7 +12,7 @@ use Digest::MD5 qw(md5_hex);
 use File::Spec::Functions qw(abs2rel splitdir catfile);
 use App::FollowmeSite qw(copy_file next_file);
 
-our $VERSION = "0.84";
+our $VERSION = "0.85";
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -985,7 +985,7 @@ sub update_site {
 }
 
 #----------------------------------------------------------------------
-# Return a closure that returns each file name
+# Return a closure that returns each file name with a specific extension
 
 sub visitor_function {
     my ($ext, $top_dir, $levels) = @_;
@@ -994,7 +994,6 @@ sub visitor_function {
     my @dirlist;
     my @filelist;
     
-    # Store the modification date with the file
     push(@dirlist, $top_dir);
     my $top_level = get_level($top_dir);
 

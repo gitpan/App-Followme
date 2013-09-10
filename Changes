@@ -1,5 +1,8 @@
 Revision history for Perl extension App::Followme
 
+0.85 2013-09-10T23:30:29Z
+    - Better OS Independent tests
+
 0.84 2013-09-08T19:20:54Z
     - Fix for bug in all_indexes: abs2rel called with undef argument
     
