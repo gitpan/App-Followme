@@ -12,7 +12,7 @@ use Digest::MD5 qw(md5_hex);
 use File::Spec::Functions qw(abs2rel splitdir catfile);
 use App::FollowmeSite qw(copy_file next_file);
 
-our $VERSION = "0.86";
+our $VERSION = "0.87";
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -1037,11 +1037,19 @@ sub visitor_function {
 sub write_page {
     my ($filename, $page) = @_;
 
+    my $modtime;
+    if (-e $filename) {
+        my @stats = stat($filename);
+        $modtime = $stats[9];
+    }
+
     my $fd = IO::File->new($filename, 'w');
     die "Couldn't write $filename" unless $fd;
     
     print $fd $page;
     close($fd);
+    
+    utime($modtime, $modtime, $filename) if defined $modtime;
     
     return;
 }
