@@ -12,7 +12,7 @@ use Digest::MD5 qw(md5_hex);
 use File::Spec::Functions qw(abs2rel splitdir catfile);
 use App::FollowmeSite qw(copy_file next_file);
 
-our $VERSION = "0.87";
+our $VERSION = "0.88";
 
 require Exporter;
 our @ISA = qw(Exporter);
@@ -958,19 +958,14 @@ sub update_site {
                 if ($config{noop_option}) {
                     print "$filename\n";
                 } else {
-                    unlink($filename) || die "Can't remove old $filename";
+                    my @stats = stat($filename);
+                    my $modtime = $stats[9];
     
                     my $new_page =
-                    eval {update_page($template, $page, $template_locality)};
+                        update_page($template, $page, $template_locality);
         
-                    my $error = $@;
-                    if ($error) {
-                        write_page($filename, $page);
-                    } else {
-                        write_page($filename, $new_page);
-                    }
-
-                    die "$filename: $error" if $error;
+                    write_page($filename, $new_page);
+                    utime($modtime, $modtime, $filename);
                 }
             }
         }
@@ -1037,20 +1032,12 @@ sub visitor_function {
 sub write_page {
     my ($filename, $page) = @_;
 
-    my $modtime;
-    if (-e $filename) {
-        my @stats = stat($filename);
-        $modtime = $stats[9];
-    }
-
     my $fd = IO::File->new($filename, 'w');
     die "Couldn't write $filename" unless $fd;
     
     print $fd $page;
     close($fd);
-    
-    utime($modtime, $modtime, $filename) if defined $modtime;
-    
+        
     return;
 }
 
