@@ -52,35 +52,35 @@
    "provides" : {
       "App::Followme" : {
          "file" : "lib/App/Followme.pm",
-         "version" : "0.90"
+         "version" : "0.91"
       },
       "App::Followme::Common" : {
          "file" : "lib/App/Followme/Common.pm",
-         "version" : "0.90"
+         "version" : "0.91"
       },
       "App::Followme::ConvertPages" : {
          "file" : "lib/App/Followme/ConvertPages.pm",
-         "version" : "0.90"
+         "version" : "0.91"
       },
       "App::Followme::CreateIndexes" : {
          "file" : "lib/App/Followme/CreateIndexes.pm",
-         "version" : "0.90"
+         "version" : "0.91"
       },
       "App::Followme::CreateNews" : {
          "file" : "lib/App/Followme/CreateNews.pm",
-         "version" : "0.90"
+         "version" : "0.91"
       },
       "App::Followme::FormatPages" : {
          "file" : "lib/App/Followme/FormatPages.pm",
-         "version" : "0.90"
+         "version" : "0.91"
       },
       "App::Followme::Initialize" : {
          "file" : "lib/App/Followme/Initialize.pm",
-         "version" : "0.90"
+         "version" : "0.91"
       },
       "App::Followme::Mock" : {
          "file" : "lib/App/Followme/Mock.pm",
-         "version" : "0.90"
+         "version" : "0.91"
       }
    },
    "release_status" : "stable",
@@ -94,5 +94,5 @@
          "web" : "https://github.com/Jinzang/App-Followme"
       }
    },
-   "version" : "0.90"
+   "version" : "0.91"
 }

@@ -9,12 +9,11 @@ use lib '..';
 use Cwd;
 use IO::Dir;
 use IO::File;
-use Clone qw(clone);
 use File::Spec::Functions qw(rel2abs splitdir catfile no_upwards rootdir updir);
 
 use App::Followme::Common qw(exclude_file split_filename top_directory);
 
-our $VERSION = "0.90";
+our $VERSION = "0.91";
 
 #----------------------------------------------------------------------
 # Create a new object to update a website
@@ -53,6 +52,36 @@ sub run {
     $self->update_folder($directory, $configuration);
 
     return;
+}
+
+#----------------------------------------------------------------------
+# Perform a deep copy of the configuration
+
+sub copy_config {
+    my ($self, $data) = @_;
+
+    my $copied_data;
+    my $ref = ref $data;
+
+    if ($ref eq 'ARRAY') {
+        my @array;
+        foreach my $item (@$data) {
+            push(@array, $self->copy_config($item));
+        }
+        $copied_data = \@array;
+
+    } elsif ($ref eq 'HASH') {
+        my %hash;
+        while (my ($name, $value) = each(%$data)) {
+            $hash{$name} = $self->copy_config($value);
+        }
+        $copied_data = \%hash;
+        
+    } else {
+        $copied_data = $data;
+    }
+    
+    return $copied_data;
 }
 
 #----------------------------------------------------------------------
@@ -221,7 +250,7 @@ sub update_folder {
     my ($self, $directory, $configuration) = @_;
     
     # Copy the configuration so all changes are local to this sub
-    $configuration = clone($configuration);
+    $configuration = $self->copy_config($configuration);
 
     # Save the current directory so we can return when finished
     my $current_directory = getcwd();
@@ -308,11 +337,14 @@ configuration files are combined with those set in the files in directories
 above it.
 
 The module parameter contains the name of a module to be run on the directory
-containing the configuration file and possibly its subdirectories. It must have
-new and run methods. An object is created by calling the new method with the
-configuration. The run method is then called without arguments. The run method
-returns a value, which if true indicates that module should be run in the
-subdirectories of the current directory.
+containing the configuration file and possibly its subdirectories. There may be
+more than one module parameter in a module file. They are run in order, starting
+with the module in the topmost configuration file. The module to be run must
+have new and run methods. The module is created and run from the directory
+containing the configuration file. The object is created by calling the new
+method with the configuration. The run method is then called without arguments.
+The run method returns a value, which if true indicates that module should be
+run in the subdirectories of the current directory.
 
 =head1 LICENSE
 
