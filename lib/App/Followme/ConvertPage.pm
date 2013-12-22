@@ -1,26 +1,16 @@
-package App::Followme::ConvertPages;
+package App::Followme::ConvertPage;
 use 5.008005;
 use strict;
 use warnings;
 
 use lib '../..';
 
-use Cwd;
-use File::Spec::Functions qw(abs2rel rel2abs splitdir catfile);
-use App::Followme::Common qw(compile_template make_relative make_template
-                             read_page write_page set_variables);
+use base qw(App::Followme::HandleSite);
 
-our $VERSION = "0.92";
+use File::Spec::Functions qw(catfile);
+use App::Followme::MostRecentFile;
 
-#----------------------------------------------------------------------
-# Create a new object to update a website
-
-sub new {
-    my ($pkg, $configuration) = @_;
-    
-    my %self = ($pkg->parameters(), %$configuration); 
-    return bless(\%self, $pkg);
-}
+our $VERSION = "0.93";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
@@ -28,55 +18,56 @@ sub new {
 sub parameters {
     my ($pkg) = @_;
     
-    return (
-            absolute => 0,
-            quick_update => 1,
-            web_extension => 'html',
+    my %parameters = (
+            quick_update => 0,
             text_extension => 'txt',
-            page_template => catfile('templates', 'page.htm'),
+            page_template => 'page.htm',
            );
+
+    my %base_params = $pkg->SUPER::parameters();
+    %parameters = (%base_params, %parameters);
+
+    return %parameters;
 }
 
 #----------------------------------------------------------------------
-# Convert text files into web pages
+# Return all the files in a subtree (example)
 
 sub run {
-    my ($self) = @_;
+    my ($self, $directory) = @_;
 
-    my $template = make_template($self->{page_template},
-                                 $self->{web_extension});
-    
-    my $sub = compile_template($template);
-    my $pattern = "*.$self->{text_extension}";
+    my $template = $self->make_template($directory, $self->{page_template});
+    my $render = $self->compile_template($template);
 
-    foreach my $filename (glob($pattern)) {
-        eval {$self->convert_a_file($filename, $sub)};
+    my ($filenames, $directories) = $self->visit($directory);
+
+    foreach my $filename (@$filenames) {
+        eval {$self->convert_a_file($render, $directory, $filename)};
         warn "$filename: $@" if $@;
     }
 
-    return ! $self->{quick_update};    
+    return if $self->{quick_update};
+    
+    foreach my $directory (@$directories) {
+        $self->run($directory);
+    }
+    
+    return;
 }
 
 #----------------------------------------------------------------------
-# Convert a single page
+# Convert a single file
 
 sub convert_a_file {
-    my ($self, $filename, $sub) = @_;
+    my ($self, $render, $directory, $filename) = @_;
     
-    my $text = read_page($filename);
-    die "Couldn't read\n" unless defined $text;
-
-    my $data = $self->{absolute} ?
-               set_variables($filename, $self->{web_extension}) :
-               set_variables($filename, $self->{web_extension}, $filename);
-
-    $data->{body} = $self->convert_text($text);
-    my $page = $sub->($data);
-
-    my $page_name = $filename;
-    $page_name =~ s/$self->{text_extension}$/$self->{web_extension}/;
+    my $data = $self->set_fields($directory, $filename);
+    my $page = $render->($data);
     
-    write_page($page_name, $page);
+    my $new_file = $filename;
+    $new_file =~ s/\.[^\.]*$/.$self->{web_extension}/;
+
+    $self->write_page($new_file, $page);
     unlink($filename);
 
     return;
@@ -107,6 +98,27 @@ sub convert_text {
     return $page;
 }
 
+#----------------------------------------------------------------------
+# Get the list of included files
+
+sub get_included_files {
+    my ($self) = @_;
+    return "*.$self->{text_extension}";
+}
+
+#----------------------------------------------------------------------
+# Get fields from reading the file
+
+sub internal_fields {
+    my ($self, $data, $filename) = @_;   
+
+    my $text = $self->read_page($filename);
+    die "Couldn't read\n" unless defined $text;
+
+    $data->{body} = $self->convert_text($text);
+    return $data;
+}
+
 1;
 __END__
 
@@ -118,9 +130,9 @@ App::Followme - Simple static web site maintenance
 
 =head1 SYNOPSIS
 
-    use App::Followme::ConvertPages;
-    my $converter = App::Followme::ConvertPages->new($configuration);
-    $converter->run();
+    use App::Followme::ConvertPage;
+    my $converter = App::Followme::ConvertPage->new($configuration);
+    $converter->run($directory);
 
 =head1 DESCRIPTION
 
@@ -132,8 +144,7 @@ double braces, so that a link would look like:
 
     <li><a href="{{url}}">{{title}}</a></li>
 
-The string which indicates a variable is configurable. The variables that are
-calculated for a text file are:
+The variables that are calculated for a text file are:
 
 =over 4
 
@@ -166,14 +177,6 @@ The following parameters are used from the configuration:
 
 =over 4
 
-=item absolute
-
-If true, urls in a page will be absolute
-
-=item quick_update
-
-Only convert files in current directory
-
 =item page_template
 
 The path to the template used to create a page, relative to the top directory.
@@ -181,10 +184,6 @@ The path to the template used to create a page, relative to the top directory.
 =item text_extension 
 
 The extension of files that are converted to web pages.
-
-=item web_extension
-
-The extension used by web pages. The default value is html
 
 =back
 
@@ -200,4 +199,3 @@ it under the same terms as Perl itself.
 Bernie Simon E<lt>bernie.simon@gmail.comE<gt>
 
 =cut
-

@@ -4,19 +4,12 @@ use 5.008005;
 use strict;
 use warnings;
 
-use IO::File;
-our $VERSION = "0.92";
+use lib '../..';
 
-#----------------------------------------------------------------------
-# Create a new object to update a website
+use File::Spec::Functions qw(abs2rel catfile);
+use base qw(App::Followme::HandleSite);
 
-sub new {
-    my ($pkg, $configuration) = @_;
-    $configuration = {} unless defined $configuration;
-    
-    my %self = %$configuration; 
-    return bless(\%self, $pkg);
-}
+our $VERSION = "0.93";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
@@ -24,32 +17,60 @@ sub new {
 sub parameters {
     my ($pkg) = @_;
     
-    return (
-            level1 => '',
-            level2 => '',
-            level3 => '',
-            level4 => '',
-            level5 => '',
-            bottom => '',
-            );
+    my %parameters = (
+            subdir => 0,
+            extension => 'html',
+           );
+
+    my %base_params = $pkg->SUPER::parameters();
+    %parameters = (%base_params, %parameters);
+
+    return %parameters;
 }
 
 #----------------------------------------------------------------------
-# Perform all updates on the directory
+# Return a list of all files in a directory
 
 sub run {
-    my ($self) = @_;
+    my ($self, $directory) = @_;
 
-    my $fd = IO::File->new('mock.txt', 'w');
-    foreach my $field (sort keys %$self) {
-        my $value = $self->{$field};
-        next if ref $value;
-        
-        print $fd "$field = $value\n";
+    my @list = $self->list_files($directory);
+    my $page = join("\n", @list);
+    
+    my $filename = catfile($directory, 'index.dat');
+    $self->write_page($filename, $page);
+   
+    return;
+}
+
+#----------------------------------------------------------------------
+# Return a list of all files in a directory
+
+sub list_files {
+    my ($self, $directory) = @_;
+
+    my @list;
+    my ($filenames, $directories) =  $self->visit($directory);
+    foreach my $filename (@$filenames) {
+        $filename = abs2rel($filename, $self->{base_directory});
+        push(@list, $filename);
     }
 
-    close($fd);
-    return 1;
+    if ($self->{subdir}) {
+        foreach my $subdirectory (@$directories) {
+            push(@list, $self->list_files($subdirectory));
+        }
+    }
+   
+    return @list;
+}
+
+#----------------------------------------------------------------------
+# Get the list of included files
+
+sub get_included_files {
+    my ($self) = @_;
+    return "*.$self->{extension}";
 }
 
 1;
@@ -65,11 +86,16 @@ App::Followme::Mock - Mock object for unit tests
 
     use App::Followme::Mock;
     my $mock = App::Followme::Mock->new();
-    $mock->run();
+    my @list = $mock->run($directory);
 
 =head1 DESCRIPTION
 
 This is a minimal objects intended for unit tests and not for production use.
+It also serves as an example of how to create a module, although modules will
+probably be a subclass of App:Followme::HandleSite instead of EveryFile. It
+returns a sorted list of relative filenames with the specified extension when
+run. If subdir is set to true, it will return all filenames in the
+subdirectories.
 
 =head1 LICENSE
 

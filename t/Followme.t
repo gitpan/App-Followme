@@ -1,11 +1,12 @@
 #!/usr/bin/env perl
 use strict;
 
+use Cwd;
 use IO::File;
 use File::Path qw(rmtree);
 use File::Spec::Functions qw(catdir catfile rel2abs splitdir);
 
-use Test::More tests => 20;
+use Test::More tests => 13;
 
 #----------------------------------------------------------------------
 # Load package
@@ -18,7 +19,6 @@ my $lib = catdir(@path, 'lib');
 unshift(@INC, $lib);
 
 require App::Followme;
-require App::Followme::Common;
 
 my $test_dir = catdir(@path, 'test');
 
@@ -27,61 +27,33 @@ mkdir $test_dir;
 chdir $test_dir;
 
 #----------------------------------------------------------------------
-# Test new and load module
+# Test set directory
 
 do {
     my $app = App::Followme->new({});
-    is(ref $app, 'App::Followme', 'Create Followme'); # test 1
-   
-    my $configuration = {module => ['App::Followme']};
-    $app->load_modules($configuration);
-    my $module = $configuration->{module}[0];
-    is(ref $module, 'App::Followme', 'Load modules'); # test 2
-};
 
-#----------------------------------------------------------------------
-# Test  get subdirectories
-
-do {
-    my @dirs = qw(first second third);
-    foreach my $dir (@dirs) {
-        mkdir $dir;
-    }
+    my $config_file = catfile($test_dir, 'followme.cfg');
+    $app->set_directories($config_file);
     
-    my $app = App::Followme->new({});
-    my @subdirectories = sort $app->get_subdirectories();
-    is_deeply(\@subdirectories, \@dirs, 'Get subdirectories'); # test 3
+    is($app->{base_directory}, $test_dir, 'Set base directory'); # test 1
+    is($app->{top_directory}, $test_dir, 'Set top directory'); # test 2
 };
 
 #----------------------------------------------------------------------
 # Test update configuration
 
 do {
-    my $configuration = {hash => {}, array => [], module => []};
+    my %configuration = (one => 1, two => 2);
     my $app = App::Followme->new({});
-
-    $app->set_configuration($configuration, 'scalar', 'one');
-    is($configuration->{scalar}, 'one', 'set scalar configuration'); # test 4
-
-    $app->set_configuration($configuration, 'array', 1);
-    $app->set_configuration($configuration, 'array', 2);
-    $app->set_configuration($configuration, 'array', 3);
-    is_deeply($configuration->{array}, [1, 2, 3],
-              'set array configuration'); # test 5
-
-    $app->set_configuration($configuration, 'hash', 'a');
-    $app->set_configuration($configuration, 'hash', 'b');
-    $app->set_configuration($configuration, 'hash', 'c');
-    is_deeply($configuration->{hash}, {a => 1, b => 1, c => 1},
-              'set hash configuration'); # test 6
 
     my $source = <<'EOQ';
 # Test configuration file
 
-array = 4
-hash = d
+three = 3
+four = 4
 
-scalar = two
+module = App::Followme::Mock
+
 EOQ
 
     my $filename = 'test.cfg';
@@ -89,73 +61,62 @@ EOQ
     print $fd $source;
     close($fd);
     
-    $configuration = $app->update_configuration($filename, $configuration);
-    is($configuration->{scalar}, 'two', 'update scalar configuration'); # test 7
-
-    is_deeply($configuration->{array}, [1, 2, 3, 4],
-              'set array configuration'); # test 8
-
-    is_deeply($configuration->{hash}, {a => 1, b => 1, c => 1, d => 1},
-              'set hash configuration'); # test 9
+    %configuration = $app->update_configuration($filename, %configuration);
+    my %configuration_ok = (one => 1, two => 2, three => 3, four => 4,
+                            module => ['App::Followme::Mock']);
+    
+    is_deeply(\%configuration, \%configuration_ok,
+              'Update configuration'); # test 3
 };
 
 #----------------------------------------------------------------------
-# Test initialize configuration
+# Test run
 
 do {
-    my @levels;
-    my $path = $test_dir;
-
-    foreach my $i (1..5) {
-        $path = catfile($path, "level$i");
-        my $filename = catfile($path, 'followme.cfg');
-        $levels[$i] = "Now we are on level $i";
-        
-        mkdir($path);
-        my $fd = IO::File->new($filename, 'w');
-        print $fd "level$i = $levels[$i]\n";
-        print $fd "bottom = $levels[$i]\n";
-        print $fd "module = App::Followme::Mock";
-        close($fd);
-    }
-    
     my $app = App::Followme->new({});
-    my $configuration = $app->initialize_configuration($path);
 
-    my $top_dir = App::Followme::Common::top_directory();
-    is($top_dir, "$test_dir/level1", 'Set top directory'); # test 10
+    chdir($test_dir);
+    my $config = catfile ($test_dir, 'followme.cfg');
+    my @config_files_ok = ($config);
     
-    is($configuration->{bottom}, $levels[4],
-       'Initialize configuration variable'); # test 11
-
-    foreach my $i (1..4) {
-        is($configuration->{"level$i"}, $levels[$i],
-           "Initialize configuration level $i"); # test 12-15
-    }
-};
-
-#----------------------------------------------------------------------
-# Test update folder
-
-do {
-    my $configuration = {module => ['App::Followme::Mock']};
-    my $app = App::Followme->new($configuration);
-    $app->update_folder("$test_dir/level1", $configuration);
-
-    my $path = $test_dir;
-    foreach my $i (1..5) {
-        $path = catfile($path, "level$i");
-        my $filename = catfile($path, 'mock.txt');
-        my $level = "Now we are on level $i";
+    $app->write_page($config, "subdir = 1\nextension = txt\n");
+    
+    my $directory;
+    foreach my $dir (qw(one two three)) {
+        mkdir($dir);
+        chdir ($dir);
+        $directory = getcwd();
         
-        my %hash;
-        my $fd = IO::File->new($filename, 'r');
-        while (<$fd>) {
-            chomp;
-            my($name, $value) = split(/\s*=\s*/, $_, 2);
-            $hash{$name} = $value;
+        $config = catfile($directory, 'followme.cfg');
+        push(@config_files_ok, $config);
+
+        $app->write_page($config, "module = App::Followme::Mock\n");
+
+        foreach my $file (qw(first.txt second.txt third.txt)) {
+            $app->write_page($file, "Fake data\n")
         }
-        close($fd);
-        is($hash{bottom}, $level, "Update folder level$i"); # tests 16-20
+    }
+
+    pop(@config_files_ok);
+    my @config_files = $app->find_configuration($directory);
+    is_deeply(\@config_files, \@config_files_ok, 'Find configuration'); # test 4
+    $app->run($test_dir);
+
+    my $count = 9;
+    chdir($test_dir);
+    foreach my $dir (qw(one two three)) {
+        chdir ($dir);
+
+        my $filename = rel2abs('index.dat');
+        ok($filename, 'Ran mock'); # test 5, 8, 11
+
+        my $page = $app->read_page($filename);
+        is(index($page, "first.txt\nsecond.txt\nthird.txt"), 0,
+           'Generated results'); # test 6, 9, 12
+
+        my @lines = split(/\n/, $page);
+        is(@lines, $count, 'Right number'); # test 7, 10, 13
+        
+        $count -= 3;
     }
 };

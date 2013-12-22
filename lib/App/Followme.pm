@@ -6,27 +6,13 @@ use warnings;
 
 use lib '..';
 
+use base qw(App::Followme::HandleSite);
+
 use Cwd;
-use IO::Dir;
 use IO::File;
 use File::Spec::Functions qw(rel2abs splitdir catfile no_upwards rootdir updir);
 
-use App::Followme::Common qw(exclude_file split_filename top_directory);
-
-our $VERSION = "0.92";
-
-#----------------------------------------------------------------------
-# Create a new object to update a website
-
-sub new {
-    my ($pkg, $configuration) = @_;
-
-    my $self = bless({}, $pkg);    
-    my %parameters = $self->update_parameters($pkg, $configuration);
-    $self->{$_} = $parameters{$_} foreach keys %parameters;
-    
-    return $self;
-}
+our $VERSION = "0.93";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
@@ -34,54 +20,27 @@ sub new {
 sub parameters {
     my ($pkg) = @_;
     
-    return (
-            configuration_file => 'followme.cfg',
-            exclude_folders => 'templates',
-            quick_update => 0,
-            );
+    my %parameters = (
+                      quick_update => 0,
+                      configuration_file => 'followme.cfg',
+                     );
+
+    my %base_params = $pkg->SUPER::parameters();
+    %parameters = (%base_params, %parameters);
+
+    return %parameters;
 }
 
 #----------------------------------------------------------------------
 # Perform all updates on the directory
 
 sub run {
-    my ($self, $filename) = @_;
+    my ($self, $directory) = @_;
 
-    my $directory = $self->set_directory($filename);    
-    my $configuration = $self->initialize_configuration($directory);
-    $self->update_folder($directory, $configuration);
+    my %configuration = $self->initialize_configuration($directory);
+    $self->update_folder($directory, %configuration);
 
     return;
-}
-
-#----------------------------------------------------------------------
-# Perform a deep copy of the configuration
-
-sub copy_config {
-    my ($self, $data) = @_;
-
-    my $copied_data;
-    my $ref = ref $data;
-
-    if ($ref eq 'ARRAY') {
-        my @array;
-        foreach my $item (@$data) {
-            push(@array, $self->copy_config($item));
-        }
-        $copied_data = \@array;
-
-    } elsif ($ref eq 'HASH') {
-        my %hash;
-        while (my ($name, $value) = each(%$data)) {
-            $hash{$name} = $self->copy_config($value);
-        }
-        $copied_data = \%hash;
-        
-    } else {
-        $copied_data = $data;
-    }
-    
-    return $copied_data;
 }
 
 #----------------------------------------------------------------------
@@ -95,32 +54,28 @@ sub find_configuration {
     my @configuration_files;
 
     for (;;) {
-        chdir(updir());
         last if getcwd() eq $root_dir;
 
         push(@configuration_files, rel2abs($self->{configuration_file}))
             if -e $self->{configuration_file};
+
+        chdir(updir());
     }
     
     chdir($directory);
-    return reverse @configuration_files;
-}
+    @configuration_files = reverse @configuration_files;
 
-#----------------------------------------------------------------------
-# Get the subdirectories in the current folder
+    # The topmost configuration file is the top and base directory
+    $self->set_directories(@configuration_files);
 
-sub get_subdirectories {
-    my ($self) = @_;
+    # Pop the last directory if equal to the current directory
+    # so it won't be double processed when we call update_folder
+
+    my $config_file = pop(@configuration_files);
+    my ($dir, $file) = $self->split_filename($config_file);
+    push(@configuration_files, $config_file) if $dir ne $directory;
     
-    my @subdirectories;    
-    my $dd = IO::Dir->new(getcwd());
-
-    while (defined (my $file = $dd->read())) {
-        push(@subdirectories, $file) if -d $file;
-    }
-    
-    $dd->close();
-    return no_upwards(@subdirectories);
+    return @configuration_files;
 }
 
 #----------------------------------------------------------------------
@@ -129,95 +84,59 @@ sub get_subdirectories {
 sub initialize_configuration {
     my ($self, $directory) = @_;
 
-    my $top_dir;
-    my $configuration = {};
-    %$configuration = %$self;
-    $configuration->{module} = [];
+    my @configuration_files = $self->find_configuration($directory);
+    my %configuration = %$self;
 
-    foreach my $filename ($self->find_configuration($directory)) {
-        my ($dir, $file) = split_filename($filename);
-        $top_dir ||= $dir;
-        chdir($dir);
-        
-        $configuration = $self->update_configuration($filename, $configuration);
+    foreach my $filename (@configuration_files) {
+        my ($dir, $file) = $self->split_filename($filename);        
+        %configuration = $self->update_configuration($filename, %configuration);
+        %configuration = $self->load_and_run_modules($dir, %configuration);
     }
 
-    $top_dir ||= $directory;
-    top_directory($top_dir);
-    
-    chdir($directory);
-    return $configuration;
+    return %configuration;
 }
 
 #----------------------------------------------------------------------
-# Load a modeule if it has not already been loaded
+# Load a modeule and then run it
 
-sub load_modules {
-    my ($self, $configuration) = @_;
+sub load_and_run_modules {
+    my ($self, $directory, %configuration) = @_;
 
-    foreach (reverse @{$configuration->{module}}) {
-        last if ref $_;
-        
-        my $module = $_;
+    foreach my $module (@{$configuration{module}}) {
         eval "require $module" or die "Module not found: $module\n";
 
-        $configuration->{base_directory} = getcwd();
-        my %parameters = $self->update_parameters($module, $configuration);
-        my $obj = $module->new(\%parameters);
-
-        $_ = $obj;
+        $configuration{base_directory} = $directory;
+        my $object = $module->new(\%configuration);
+        $object->run($directory);
     }
-
-    return;
+    
+    delete $configuration{module};
+    return %configuration;
 }
 
 #----------------------------------------------------------------------
-# Set a value in the configuration hash
+# Set base and top directories to the topmost configuration file
 
-sub set_configuration {
-    my ($self, $configuration, $name, $value) = @_;
-    
-    if (ref $configuration->{$name} eq 'HASH') {
-        $configuration->{$name}{$value} = 1;
-        
-    } elsif (ref $configuration->{$name} eq 'ARRAY') {
-        push(@{$configuration->{$name}}, $value);
+sub set_directories {
+    my ($self, @configuration_files) = @_;
 
-    } else {
-       $configuration->{$name} = $value;
-    }
+    die "No configuration file found\n" unless @configuration_files;
 
+    my ($directory, $file) = $self->split_filename($configuration_files[0]);
+    $self->{base_directory} = $directory;
+    $self->{top_directory} = $directory;    
     return;
-}
-
-#----------------------------------------------------------------------
-# If name passed is not directory, set a sensible default
-
-sub set_directory {
-    my ($self, $filename) = @_;
-    
-    my ($directory, $file);
-    if (defined $filename) {
-        if (! -d $filename) {
-            ($directory, $file) = split_filename($filename);
-            $self->{quick_update} = 1;
-        }
-        
-    } else {
-        $directory = getcwd();
-    }
-
-    return $directory;
 }
 
 #----------------------------------------------------------------------
 # Update the configuration from a file
 
 sub update_configuration {
-    my ($self, $filename, $configuration) = @_;
+    my ($self, $filename, %configuration) = @_;
 
+    my @modules;
     my $fd = IO::File->new($filename, 'r');
-
+    
     if ($fd) {
         while (my $line = <$fd>) {
             # Ignore comments and blank lines
@@ -233,75 +152,47 @@ sub update_configuration {
 
             # Insert the name and value into the hash
 
-            $self->set_configuration($configuration, $name, $value);
+            if ($name eq 'module') {
+                push(@modules, $value);
+            } else {
+                $configuration{$name} = $value;
+            }
         }
-
+        
         close($fd);
     }
 
-    $self->load_modules($configuration);
-    return $configuration;
+    $configuration{module} = \@modules;
+    return %configuration;
 }
 
 #----------------------------------------------------------------------
 # Update files in one folder
 
 sub update_folder {
-    my ($self, $directory, $configuration) = @_;
+    my ($self, $directory, %configuration) = @_;
     
-    # Copy the configuration so all changes are local to this sub
-    $configuration = $self->copy_config($configuration);
-
-    # Save the current directory so we can return when finished
-    my $current_directory = getcwd();
-    chdir($directory);
-     
     # Read any configuration found in this directory
-    $configuration = $self->update_configuration($self->{configuration_file},
-                                                 $configuration)
-                     if -e $self->{configuration_file};
-    
-    # Run the modules mentioned in the configuration
-    # Run any that return true on the subdirectories
-    
-    my @modules;
-    foreach my $module (@{$configuration->{module}}) {
-        push(@modules, $module) if $module->run();
-        chdir($directory);
+    my $configuration_file = catfile($directory, $self->{configuration_file});
+
+    if (-e $configuration_file) {
+        %configuration = $self->update_configuration($configuration_file,
+                                                     %configuration);
+        %configuration = $self->load_and_run_modules($directory,
+                                                     %configuration);
     }
 
     # Recurse on the subdirectories running the filtered list of modules
     
-    if (@modules) {
-        $configuration->{module} = \@modules;
-        my @subdirectories = $self->get_subdirectories();
-    
-        foreach my $subdirectory (@subdirectories) {
-            next if exclude_file($self->{exclude_folders}, $subdirectory);
-            $self->update_folder($subdirectory, $configuration);
+    unless ($self->{quick_update}) {
+        my ($filenames, $directories) = $self->visit($directory);
+        
+        foreach my $subdirectory (@$directories) {
+            $self->update_folder($subdirectory, %configuration);
         }
     }
 
-    chdir($current_directory);
     return;
-}
-
-#----------------------------------------------------------------------
-# Update a module's parameters
-
-sub update_parameters {
-    my ($self, $module, $configuration) = @_;
-    
-    $configuration = {} unless defined $configuration;
-    return %$configuration unless $module->can('parameters');
-        
-    my %parameters = $module->parameters();
-    foreach my $field (keys %parameters) {
-        $parameters{$field} = $configuration->{$field}
-            if exists $configuration->{$field};
-    }
-    
-    return %parameters;
 }
 
 1;
@@ -317,7 +208,7 @@ App::Followme - Update a static website
 
     use App::Followme;
     my $app = App::Followme->new($configuration);
-    $app->run(shift @ARGV);
+    $app->run($directory);
 
 =head1 DESCRIPTION
 

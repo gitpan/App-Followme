@@ -7,7 +7,7 @@ use Cwd;
 use IO::File;
 use File::Spec::Functions qw(splitdir catfile);
 
-our $VERSION = "0.92";
+our $VERSION = "0.93";
 our $modeline;
 
 require Exporter;
@@ -92,14 +92,12 @@ sub next_file {
 1;
 __DATA__
 #--%X--%X followme.cfg
-module = App::Followme::FormatPages
-module = App::Followme::ConvertPages
+module = App::Followme::FormatPage
+module = App::Followme::ConvertPage
 #--%X--%X archive/followme.cfg
 module = App::Followme::CreateNews
-module = App::Followme::CreateIndexes
-index_file = index.html
+news_index_file = index.html
 news_file = ../blog.html
-exclude_files = index.html
 #--%X--%X templates/page.htm
 <!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
 <html>
@@ -154,6 +152,37 @@ exclude_files = index.html
 {{body}}
 <p><a href="{{url}}">Written on {{month}} {{day}}, {{year}}</a></p>
 <!-- endloop -->
+<!-- endsection content-->
+</div>
+</body>
+</html>
+
+#--%X--%X templates/news_index.htm
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<!-- section meta -->
+<title>{{title}}</title>
+<!-- endsection meta -->
+</head>
+<body>
+<div id="header">
+<h1>Site Title</h1>
+</div>
+<div id="sidebar">
+<!-- section navigation -->
+<!-- endsection navigation -->
+<!-- section sidebar -->
+<!-- endsection sidebar -->
+</div>
+<div id="content">
+<!-- section content -->
+<h2>{{title}}</h2>
+
+<ul>
+<!-- loop --><li><a href="{{url}}">{{title}}</a></li>
+<!-- endloop -->
+</ul>
 <!-- endsection content-->
 </div>
 </body>
