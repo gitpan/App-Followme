@@ -6,11 +6,11 @@ use warnings;
 use lib '../..';
 
 use base qw(App::Followme::HandleSite);
-
+use Text::Markdown;
 use File::Spec::Functions qw(catfile);
 use App::Followme::MostRecentFile;
 
-our $VERSION = "0.93";
+our $VERSION = "0.94";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
@@ -20,9 +20,12 @@ sub parameters {
     
     my %parameters = (
             quick_update => 0,
-            text_extension => 'txt',
+            text_extension => 'md',
             page_template => 'page.htm',
-           );
+            empty_element_suffix => '/>',
+            tab_width => 4,
+            trust_list_start_value => 0,
+    );
 
     my %base_params = $pkg->SUPER::parameters();
     %parameters = (%base_params, %parameters);
@@ -74,31 +77,6 @@ sub convert_a_file {
 }
 
 #----------------------------------------------------------------------
-# Add paragraph tags to a text file
-
-sub convert_text {
-    my ($self, $text) = @_;
-
-    my @paragraphs = split(/(\n{2,})/, $text);
-
-    my $pre;
-    my $page = '';
-    foreach my $paragraph (@paragraphs) {
-        $pre = $paragraph =~ /<pre/i;            
-
-        if (! $pre && $paragraph =~ /\S/) {
-          $paragraph = "<p>$paragraph</p>"
-                unless $paragraph =~ /^\s*</ && $paragraph =~ />\s*$/;
-        }
-
-        $pre = $pre && $paragraph !~ /<\/pre/i;
-        $page .= $paragraph;
-    }
-    
-    return $page;
-}
-
-#----------------------------------------------------------------------
 # Get the list of included files
 
 sub get_included_files {
@@ -115,8 +93,26 @@ sub internal_fields {
     my $text = $self->read_page($filename);
     die "Couldn't read\n" unless defined $text;
 
-    $data->{body} = $self->convert_text($text);
+    $data->{body} = $self->{md}->markdown($text);
+    $data = $self->build_title_from_header($data);
+
     return $data;
+}
+
+#----------------------------------------------------------------------
+# Create markdown object and add it to self
+
+sub setup {
+    my ($self) = @_;
+
+    my %params;
+    for my $field (qw(empty_element_suffix tab_width
+                      trust_list_start_value)) {
+        $params{$field} = $self->{$field};
+    }
+
+    $self->{md} = Text::Markdown->new(%params);
+    return $self;
 }
 
 1;
@@ -150,19 +146,13 @@ The variables that are calculated for a text file are:
 
 =item body
 
-All the content of the text file. The content is passed through a subroutine
-before being stored in this variable. The subroutine takes one input, the
-content stored as a string, and returns it as a string containing html. The
-default subroutine, add_tags in this module, only surrounds paragraphs with
-p tags, where paragraphs are separated by a blank line. You can supply a
-different subroutine by changing the value of the configuration variable
-page_converter.
+All the content of the text file. Markdown is called on the file's content to
+generate html before being stored in the body variable. 
 
 =item title
 
-The title of the page is derived from the file name by removing the filename
-extension, removing any leading digits,replacing dashes with spaces, and
-capitalizing the first character of each word.
+The title of the page is derived from the header, if one is at the front of the
+file content, or the filename, if it is not.
 
 =item time fields
 

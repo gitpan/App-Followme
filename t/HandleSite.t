@@ -5,7 +5,7 @@ use IO::File;
 use File::Path qw(rmtree);
 use File::Spec::Functions qw(catdir catfile rel2abs splitdir);
 
-use Test::More tests => 35;
+use Test::More tests => 37;
 
 #----------------------------------------------------------------------
 # Load package
@@ -339,26 +339,25 @@ do {
     my $hs = App::Followme::HandleSite->new;
     my $text_name = catfile('watch','this-is-only-a-test.txt');
     
-    $data = $hs->build_title($data, $text_name);
+    $data = $hs->build_title_from_filename($data, $text_name);
     my $title_ok = 'This Is Only A Test';
     is($data->{title}, $title_ok, 'Build file title'); # test 29
 
     my $index_name = catfile('watch','index.html');
-    $data = $hs->build_title($data, $index_name);
+    $data = $hs->build_title_from_filename($data, $index_name);
     $title_ok = 'Watch';
     is($data->{title}, $title_ok, 'Build directory title'); # test 30
     
     $data = $hs->build_url($data, $test_dir, $text_name);
     my $url_ok = 'watch/this-is-only-a-test.html';
-    is($data->{url}, $url_ok, 'Build relative file url'); # test 31
-    $hs->{absolute} = 1;
-    $data = $hs->build_url($data, $test_dir, $text_name);
-    $url_ok = '/watch/this-is-only-a-test.html';
-    is($data->{url}, $url_ok, 'Build absolute file url'); # test 32
+    is($data->{url}, $url_ok, 'Build a relative file url'); # test 31
+
+    $url_ok = '/' . $url_ok;
+    is($data->{absolute_url}, $url_ok, 'Build an absolute file url'); # test 32
 
     mkdir('watch');
     $data = $hs->build_url($data, $test_dir, 'watch');
-    is($data->{url}, '/watch/index.html', 'Build directory url'); #test 33
+    is($data->{url}, 'watch/index.html', 'Build directory url'); #test 33
        
     $data = {};
     my $date = $hs->build_date($data, 'two.html');
@@ -370,6 +369,20 @@ do {
     $data = {};
     $data = $hs->external_fields($data, $test_dir, 'two.html');
     my @keys = sort keys %$data;
-    my @keys_ok = sort(@date_ok, 'title', 'url');
+    my @keys_ok = sort(@date_ok, 'absolute_url', 'title', 'url');
     is_deeply(\@keys, \@keys_ok, 'Get data for file'); # test 35
+    
+    my $body = <<'EOQ';
+    <h2>The title</h2>
+    
+    <p>The body
+</p>
+EOQ
+
+    $data = {body => $body};
+    $data = $hs->build_title_from_header($data);
+    is($data->{title}, 'The title', 'Get title from header'); # test 36
+    
+    my $summary = $hs->build_summary($data);
+    is($summary, "The body\n", 'Get summary'); # test 37
 };

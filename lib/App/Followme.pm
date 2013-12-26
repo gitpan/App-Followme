@@ -12,7 +12,7 @@ use Cwd;
 use IO::File;
 use File::Spec::Functions qw(rel2abs splitdir catfile no_upwards rootdir updir);
 
-our $VERSION = "0.93";
+our $VERSION = "0.94";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
@@ -88,9 +88,14 @@ sub initialize_configuration {
     my %configuration = %$self;
 
     foreach my $filename (@configuration_files) {
-        my ($dir, $file) = $self->split_filename($filename);        
-        %configuration = $self->update_configuration($filename, %configuration);
-        %configuration = $self->load_and_run_modules($dir, %configuration);
+        my ($base_directory, $config_file) = $self->split_filename($filename);
+        
+        %configuration = $self->update_configuration($filename,
+                                                     %configuration);
+
+        %configuration = $self->load_and_run_modules($base_directory,
+                                                     $directory,
+                                                     %configuration);
     }
 
     return %configuration;
@@ -100,17 +105,19 @@ sub initialize_configuration {
 # Load a modeule and then run it
 
 sub load_and_run_modules {
-    my ($self, $directory, %configuration) = @_;
+    my ($self, $base_directory, $directory, %configuration) = @_;
 
-    foreach my $module (@{$configuration{module}}) {
+    my @modules = @{$configuration{module}};
+    delete $configuration{module};
+
+    foreach my $module (@modules) {
         eval "require $module" or die "Module not found: $module\n";
 
-        $configuration{base_directory} = $directory;
+        $configuration{base_directory} = $base_directory;
         my $object = $module->new(\%configuration);
         $object->run($directory);
     }
     
-    delete $configuration{module};
     return %configuration;
 }
 
@@ -178,7 +185,9 @@ sub update_folder {
     if (-e $configuration_file) {
         %configuration = $self->update_configuration($configuration_file,
                                                      %configuration);
+
         %configuration = $self->load_and_run_modules($directory,
+                                                     $directory,
                                                      %configuration);
     }
 

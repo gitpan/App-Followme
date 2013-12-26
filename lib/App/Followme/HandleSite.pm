@@ -13,7 +13,7 @@ use File::Spec::Functions qw(abs2rel catfile file_name_is_absolute
 use App::Followme::MostRecentFile;
 use base qw(App::Followme::EveryFile);
 
-our $VERSION = "0.93";
+our $VERSION = "0.94";
 
 use constant MONTHS => [qw(January February March April May June July
                            August September October November December)];
@@ -25,7 +25,6 @@ sub parameters {
     my ($pkg) = @_;
     
     my %parameters = (
-            absolute => 0,
             top_directory => getcwd(),
             template_directory => 'templates',
            );
@@ -84,7 +83,7 @@ sub build_date {
 #----------------------------------------------------------------------
 # Get the title from the filename root
 
-sub build_title {
+sub build_title_from_filename {
     my ($self, $data, $filename) = @_;
     
     my ($dir, $file) = $self->split_filename($filename);
@@ -103,25 +102,45 @@ sub build_title {
 }
 
 #----------------------------------------------------------------------
+# Get the title from the first paragraph of the page
+
+sub build_summary {
+    my ($self, $data) = @_;
+    
+    my $summary = '';
+    if (exists $data->{body}) {
+        if ($data->{body} =~ m!<p[^>]*>(.*?)</p[^>]*>!si) {
+            $summary = $1;
+        }
+    }
+    
+    return $summary;
+}
+
+#----------------------------------------------------------------------
+# Get the title from the page header
+
+sub build_title_from_header {
+    my ($self, $data) = @_;
+    
+    if (exists $data->{body}) {
+        if ($data->{body} =~ s!^\s*<h(\d)[^>]*>(.*?)</h\1[^>]*>!!si) {
+            $data->{title} = $2;
+        }
+    }
+    
+    return $data;
+}
+
+#----------------------------------------------------------------------
 # Build a url from a filename
 
 sub build_url {
     my ($self, $data, $directory, $filename) = @_;
 
-    my $is_dir = -d $filename;
-    $directory = $self->{top_directory} if $self->{absolute};
-
-    $filename = rel2abs($filename);
-    $filename = abs2rel($filename, $directory);
-    $filename = "/$filename" if $self->{absolute};
-    
-    my @path = splitdir($filename);
-    push(@path, 'index.html') if $is_dir;
-    
-    my $url = join('/', @path);
-    $url =~ s/\.[^\.]*$/.$self->{web_extension}/;
-
-    $data->{url} = $url;
+    $data->{url} = $self->filename_to_url($directory, $filename);
+    $data->{absolute_url} = '/' . $self->filename_to_url($self->{top_directory},
+                                                         $filename);
     return $data;
 }
 
@@ -177,10 +196,30 @@ sub external_fields {
     my ($self, $data, $directory, $filename) = @_;
 
     $data = $self->build_date($data, $filename);
-    $data = $self->build_title($data, $filename);
+    $data = $self->build_title_from_filename($data, $filename);
     $data = $self->build_url($data, $directory, $filename);
 
     return $data;
+}
+
+#----------------------------------------------------------------------
+# Convert filename to url
+
+sub filename_to_url {
+    my ($self, $directory, $filename) = @_;    
+
+    my $is_dir = -d $filename;
+    $filename = rel2abs($filename);
+    $filename = abs2rel($filename, $directory);
+    $filename = "/$filename" if $self->{absolute};
+    
+    my @path = splitdir($filename);
+    push(@path, 'index.html') if $is_dir;
+    
+    my $url = join('/', @path);
+    $url =~ s/\.[^\.]*$/.$self->{web_extension}/;
+
+    return $url;
 }
 
 #----------------------------------------------------------------------
@@ -265,12 +304,20 @@ sub get_template_name {
 sub internal_fields {
     my ($self, $data, $filename) = @_;   
 
-    if (-d $filename) {
-        my $index_name = "index.$self->{web_extension}";
-        $filename = catfile($filename, $index_name);
-    }
+    my ($ext) = $filename =~ /\.([^\.]*)$/;
 
-    $data->{body} = $self->read_page($filename);
+    if ($ext eq $self->{web_extension}) {
+        if (-d $filename) {
+            my $index_name = "index.$self->{web_extension}";
+            $filename = catfile($filename, $index_name);
+        }
+    
+        my $body = $self->read_page($filename);
+        $data->{body} = $body if defined $body;
+        $data->{summary} = $self->build_summary($data);
+        $data = $self->build_title_from_header($data);
+    }
+    
     return $data;
 }
 
@@ -523,7 +570,7 @@ Some of the common methods are:
 The variables calculated from the modification time are: C<weekday, month,>
 C<monthnum, day, year, hour24, hour, ampm, minute,> and C<second.>
 
-=item my $data = $self->build_title($data, $filename);
+=item my $data = $self->build_title_from_filename($data, $filename);
 
 The title of the page is derived from the file name by removing the filename
 extension, removing any leading digits,replacing dashes with spaces, and
@@ -531,7 +578,7 @@ capitalizing the first character of each word.
 
 =item $data = $self->build_url($data, $filename);
 
-Build the url that of a web page from its filename.
+Build the relative and absolute urls of a web page from a filename.
 
 =item my $sub = $self->compile_template($template, $variable);
 

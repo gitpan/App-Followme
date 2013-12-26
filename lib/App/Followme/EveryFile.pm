@@ -9,7 +9,7 @@ use Cwd;
 use IO::Dir;
 use File::Spec::Functions qw(rel2abs catfile splitdir no_upwards);
 
-our $VERSION = "0.93";
+our $VERSION = "0.94";
 
 #----------------------------------------------------------------------
 # Create object that returns files in a directory tree
@@ -22,7 +22,8 @@ sub new {
     
     $self->{included_files} = $self->glob_patterns($self->get_included_files());
     $self->{excluded_files} = $self->glob_patterns($self->get_excluded_files());
-
+    $self = $self->setup();
+    
     return $self;
 }
 
@@ -127,6 +128,14 @@ sub match_file {
     }
 
     return;
+}
+
+#----------------------------------------------------------------------
+# Set up object fields (stub)
+
+sub setup {
+    my ($self) = @_;
+    return $self;
 }
 
 #----------------------------------------------------------------------
