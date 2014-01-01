@@ -53,43 +53,43 @@
    "provides" : {
       "App::Followme" : {
          "file" : "lib/App/Followme.pm",
-         "version" : "0.94"
+         "version" : "0.95"
       },
       "App::Followme::ConvertPage" : {
          "file" : "lib/App/Followme/ConvertPage.pm",
-         "version" : "0.94"
+         "version" : "0.95"
       },
       "App::Followme::CreateIndex" : {
          "file" : "lib/App/Followme/CreateIndex.pm",
-         "version" : "0.94"
+         "version" : "0.95"
       },
       "App::Followme::CreateNews" : {
          "file" : "lib/App/Followme/CreateNews.pm",
-         "version" : "0.94"
+         "version" : "0.95"
       },
       "App::Followme::EveryFile" : {
          "file" : "lib/App/Followme/EveryFile.pm",
-         "version" : "0.94"
+         "version" : "0.95"
       },
       "App::Followme::FormatPage" : {
          "file" : "lib/App/Followme/FormatPage.pm",
-         "version" : "0.94"
+         "version" : "0.95"
       },
       "App::Followme::HandleSite" : {
          "file" : "lib/App/Followme/HandleSite.pm",
-         "version" : "0.94"
+         "version" : "0.95"
       },
       "App::Followme::Initialize" : {
          "file" : "lib/App/Followme/Initialize.pm",
-         "version" : "0.94"
+         "version" : "0.95"
       },
       "App::Followme::Mock" : {
          "file" : "lib/App/Followme/Mock.pm",
-         "version" : "0.94"
+         "version" : "0.95"
       },
       "App::Followme::MostRecentFile" : {
          "file" : "lib/App/Followme/MostRecentFile.pm",
-         "version" : "0.94"
+         "version" : "0.95"
       }
    },
    "release_status" : "stable",
@@ -103,5 +103,5 @@
          "web" : "https://github.com/Jinzang/App-Followme"
       }
    },
-   "version" : "0.94"
+   "version" : "0.95"
 }
