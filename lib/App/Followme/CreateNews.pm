@@ -9,7 +9,7 @@ use base qw(App::Followme::HandleSite);
 
 use File::Spec::Functions qw(abs2rel catfile no_upwards rel2abs splitdir);
 
-our $VERSION = "0.95";
+our $VERSION = "0.96";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
@@ -151,6 +151,8 @@ sub internal_fields {
     if ($page) {
         my $blocks = $self->parse_page($page);    
         $data->{body} = $blocks->{$self->{body_tag}};
+        $data->{summary} = $self->build_summary($data);
+        $data = $self->build_title_from_header($data);
     }
     
     return $data;
