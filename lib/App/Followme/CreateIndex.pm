@@ -11,7 +11,7 @@ use Cwd;
 use IO::Dir;
 use File::Spec::Functions qw(abs2rel rel2abs splitdir catfile no_upwards);
 
-our $VERSION = "0.96";
+our $VERSION = "0.97";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
@@ -58,8 +58,7 @@ sub create_an_index {
     my $data = $self->set_fields($directory, $index_name);
     $data->{loop} = $self->index_data($directory);
 
-    my $template = $self->make_template($directory, $self->{index_template});
-    my $render = $self->compile_template($template);
+    my $render = $self->make_template($directory, $self->{index_template});
     my $page = $render->($data);
 
     $self->write_page($index_name, $page);

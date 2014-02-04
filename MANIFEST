@@ -14,6 +14,7 @@ lib/App/Followme/HandleSite.pm
 lib/App/Followme/Initialize.pm
 lib/App/Followme/Mock.pm
 lib/App/Followme/MostRecentFile.pm
+lib/App/Followme/Variables.pm
 script/followme
 t/ConvertPage.t
 t/CreateIndex.t
@@ -24,6 +25,7 @@ t/FormatPage.t
 t/HandleSite.t
 t/Initialize.t
 t/MostRecentFile.t
+t/Variables.t
 t/ZFunctional.t
 META.yml
 MANIFEST

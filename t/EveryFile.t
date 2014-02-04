@@ -6,7 +6,7 @@ use IO::File;
 use File::Path qw(rmtree);
 use File::Spec::Functions qw(catdir catfile rel2abs splitdir);
 
-use Test::More tests => 6;
+use Test::More tests => 17;
 
 #----------------------------------------------------------------------
 # Load package
@@ -28,6 +28,20 @@ chdir $test_dir;
 $test_dir = cwd();
 
 #----------------------------------------------------------------------
+# Test same file
+
+do {
+    my $ef = App::Followme::EveryFile->new();
+
+    my $same = $ef->same_file('first.txt', 'first.txt');
+    is($same, 1, 'Same file'); # test 1
+    
+    $same = $ef->same_file('first.txt', 'second.txt');
+    is($same, undef, 'Not same file'); # test 2
+    
+};
+
+#----------------------------------------------------------------------
 # Test file visitor
 
 do {
@@ -35,10 +49,10 @@ do {
     my $excluded_files_ok = ['\.htm$', '^template_'];
     
     my $ef = App::Followme::EveryFile->new();
-    is($ef->{base_directory}, $test_dir, 'Set EveryFile base directory');  # test 1
+    is($ef->{base_directory}, $test_dir, 'Set EveryFile base directory');  # test 3
 
     my $excluded_files = $ef->glob_patterns($exclude_files);
-    is_deeply($excluded_files, $excluded_files_ok, 'Glob patterns'); # test 2
+    is_deeply($excluded_files, $excluded_files_ok, 'Glob patterns'); # test 4
 
     my $dir_ok = $test_dir;
     my $file_ok = 'index.html';
@@ -47,12 +61,12 @@ do {
 
     my @dir = splitdir($dir);
     my @dir_ok = splitdir($dir_ok);
-    is_deeply(\@dir, \@dir_ok, 'Split directory'); # test 3
-    is($file, $file_ok, 'Split filename'); # test 4
+    is_deeply(\@dir, \@dir_ok, 'Split directory'); # test 5
+    is($file, $file_ok, 'Split filename'); # test 6
 };
 
 #----------------------------------------------------------------------
-# Create test files and test run method and its submethods
+# Test read and write page
 
 do {
    my $code = <<'EOQ';
@@ -68,36 +82,43 @@ do {
 <h1>%%</h1>
 <!-- endsection content -->
 <!-- section navigation in folder -->
-<p><a href="">%%</a></p>
+<p><a href="">&&</a></p>
 <!-- endsection navigation -->
 </body>
 </html>
 EOQ
 
-    my @ok_filenames;
-    foreach my $count (qw(first second third)) {
-        my $output = $code;
-        $output =~ s/%%/Page $count/g;
-
-        my $filename = catfile($test_dir, "$count.html");
-        push(@ok_filenames, $filename) ;
-        
-        my $fd = IO::File->new($filename, 'w');
-        print $fd $output;
-        close $fd;
-    }
-
     my @ok_folders;
-    foreach my $folder (qw(sub-one sub-two)) {
-        my $dir = catfile($test_dir, $folder);
-        push(@ok_folders, $dir);
-        mkdir($dir);
+    my @ok_filenames;
+    my $ef = App::Followme::EveryFile->new;
+    
+    foreach my $dir (('', 'sub-one', 'sub-two')) {
+        if ($dir ne '') {
+            mkdir $dir;
+            push(@ok_folders, catfile($test_dir, $dir));
+        }
+        
+        foreach my $count (qw(first second third)) {
+            my $output = $code;
+            $output =~ s/%%/Page $count/g;
+            $output =~ s/&&/$dir link/g;
+
+            my @dirs;
+            push(@dirs, $test_dir);
+            push(@dirs, $dir) if $dir;
+
+            my $filename = catfile(@dirs, "$count.html");
+            push(@ok_filenames, $filename) if $dir eq '';
+        
+            $ef->write_page($filename, $output);
+
+            my $input = $ef->read_page($filename);
+            is($input, $output, "Read and write page $filename"); #tests 7-15
+        }
     }
     
-    my $ef = App::Followme::EveryFile->new();
     my ($files, $folders) = $ef->visit($test_dir);
-   
-    is_deeply($folders, \@ok_folders, 'get list of folders'); # test 5
-    is_deeply($files, \@ok_filenames, 'get list of files'); # test 6
+    is_deeply($folders, \@ok_folders, 'get list of folders'); # test 16
+    is_deeply($files, \@ok_filenames, 'get list of files'); # test 17
 };
 
