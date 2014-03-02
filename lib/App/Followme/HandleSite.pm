@@ -13,7 +13,7 @@ use lib '../..';
 
 use base qw(App::Followme::Variables);
 
-our $VERSION = "0.97";
+our $VERSION = "0.98";
 
 use constant COMMAND_START => '<!-- ';
 use constant COMMAND_END => '-->';
@@ -248,6 +248,14 @@ sub get_command {
                     };
 
     return $commands->{$cmd};
+}
+
+#----------------------------------------------------------------------
+# Get the list of excluded files
+
+sub get_excluded_directories {
+    my ($self) = @_;
+    return [$self->{excluded_directory}];
 }
 
 #----------------------------------------------------------------------
@@ -549,11 +557,14 @@ sub set_command {
 # Set the regular expression patterns used to match a command
 
 sub setup {
-    my ($self) = @_;
+    my ($self, $configuration) = @_;
 
     $self->{command_start_pattern} = '^\s*' . quotemeta(COMMAND_START);
     $self->{command_end_pattern} = '\s*' . quotemeta(COMMAND_END) . '\s*$';
-            
+
+    $self->{excluded_directory} = catfile($self->{top_directory},
+                                          $self->{template_directory});
+
     return $self;
 }
 

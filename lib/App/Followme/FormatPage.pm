@@ -10,7 +10,7 @@ use base qw(App::Followme::HandleSite);
 use Digest::MD5 qw(md5_hex);
 use File::Spec::Functions qw(abs2rel rel2abs splitdir catfile);
 
-our $VERSION = "0.97";
+our $VERSION = "0.98";
 
 #----------------------------------------------------------------------
 # Return all the files in a subtree (example)
@@ -252,11 +252,7 @@ sub update_directory {
     utime($modtime, $modtime, $directory);
     return unless $changes;
 
-    my $template_directory = $self->full_file_name($self->{top_directory},
-                                                   $self->{template_directory});
-    
     for my $subdirectory (@$directories) {
-        next if $subdirectory eq $template_directory;
         $self->update_directory($subdirectory, $prototype, $prototype_path);
     }
 

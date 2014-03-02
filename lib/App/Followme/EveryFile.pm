@@ -9,7 +9,7 @@ use Cwd;
 use IO::Dir;
 use File::Spec::Functions qw(rel2abs catfile splitdir no_upwards);
 
-our $VERSION = "0.97";
+our $VERSION = "0.98";
 
 #----------------------------------------------------------------------
 # Create object that returns files in a directory tree
@@ -22,7 +22,7 @@ sub new {
     
     $self->{included_files} = $self->glob_patterns($self->get_included_files());
     $self->{excluded_files} = $self->glob_patterns($self->get_excluded_files());
-    $self = $self->setup();
+    $self = $self->setup($configuration);
     
     return $self;
 }
@@ -53,6 +53,14 @@ sub run {
     }
     
     return @files;
+}
+
+#----------------------------------------------------------------------
+# Get the list of excluded files
+
+sub get_excluded_directories {
+    my ($self) = @_;
+    return [];
 }
 
 #----------------------------------------------------------------------
@@ -148,14 +156,6 @@ sub read_page {
 }
 
 #----------------------------------------------------------------------
-# Set up object fields (stub)
-
-sub setup {
-    my ($self) = @_;
-    return $self;
-}
-
-#----------------------------------------------------------------------
 # Cehck if two filenames are the same in an os independent way
 
 sub same_file {
@@ -170,6 +170,29 @@ sub same_file {
     }
     
     return 1;
+}
+
+#----------------------------------------------------------------------
+# Check if directory should be searched
+
+sub search_directory {
+    my ($self, $directory) = @_;
+    
+    my $excluded_dirs = $self->get_excluded_directories();
+    
+    foreach my $excluded (@$excluded_dirs) {
+        return if $self->same_file($directory, $excluded);
+    }
+    
+    return 1;
+}
+
+#----------------------------------------------------------------------
+# Set up object fields (stub)
+
+sub setup {
+    my ($self, $configuration) = @_;
+    return $self;
 }
 
 #----------------------------------------------------------------------
@@ -229,7 +252,7 @@ sub visit {
         my $path = catfile($directory, $file);
     
         if (-d $path) {
-            push(@directories, $path);
+            push(@directories, $path) if $self->search_directory($path);
         } else {
             push(@filenames, $path) if $self->match_file($path);
         }

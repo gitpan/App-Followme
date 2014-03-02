@@ -14,8 +14,12 @@ lib/App/Followme/HandleSite.pm
 lib/App/Followme/Initialize.pm
 lib/App/Followme/Mock.pm
 lib/App/Followme/MostRecentFile.pm
+lib/App/Followme/UploadFtp.pm
+lib/App/Followme/UploadNone.pm
+lib/App/Followme/UploadSite.pm
 lib/App/Followme/Variables.pm
 script/followme
+share/followme.el
 t/ConvertPage.t
 t/CreateIndex.t
 t/CreateNews.t
@@ -25,6 +29,9 @@ t/FormatPage.t
 t/HandleSite.t
 t/Initialize.t
 t/MostRecentFile.t
+t/UploadFtp.t
+t/UploadNone.t
+t/UploadSite.t
 t/Variables.t
 t/ZFunctional.t
 META.yml

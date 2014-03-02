@@ -11,7 +11,7 @@ use Cwd;
 use IO::Dir;
 use File::Spec::Functions qw(abs2rel rel2abs splitdir catfile no_upwards);
 
-our $VERSION = "0.97";
+our $VERSION = "0.98";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
@@ -47,6 +47,23 @@ sub run {
     warn "$index_name: $@" if $@;
     
     return;
+}
+
+#----------------------------------------------------------------------
+# Build a url from a filename
+
+sub build_url {
+    my ($self, $data, $directory, $filename) = @_;
+
+    $data->{url} = $self->filename_to_url($directory,
+                                          $filename,
+                                        );
+    
+    $data->{absolute_url} = '/' . $self->filename_to_url($self->{top_directory},
+                                                         $filename,
+                                                        );
+
+    return $data;
 }
 
 #----------------------------------------------------------------------
@@ -98,6 +115,7 @@ sub index_data {
 
     return \@index_data;
 }
+
 
 1;
 __END__
