@@ -12,7 +12,7 @@ use Cwd;
 use IO::File;
 use File::Spec::Functions qw(splitdir catfile);
 
-our $VERSION = "0.98";
+our $VERSION = "0.99";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
@@ -37,12 +37,11 @@ sub parameters {
 sub run {
     my ($self, $directory) = @_;
 
-    my %configuration = %$self;
     my $configuration_files = $self->find_configuration($directory);
 
     $self->update_folder($directory,
                          $configuration_files,
-                         %configuration);
+                         %$self);
 
     return;
 }
