@@ -12,7 +12,7 @@ use Cwd;
 use IO::File;
 use File::Spec::Functions qw(splitdir catfile);
 
-our $VERSION = "0.99";
+our $VERSION = "1.00";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
@@ -166,7 +166,7 @@ sub update_folder {
         $run_before = $configuration{run_before};
         delete $configuration{run_before};
     
-        $run_after = $configuration{run_before};
+        $run_after = $configuration{run_after};
         delete $configuration{run_after};
     }
     
