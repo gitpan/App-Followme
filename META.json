@@ -40,6 +40,7 @@
       },
       "runtime" : {
          "requires" : {
+            "Net::FTP" : "0",
             "Text::Markdown" : "1.000031",
             "perl" : "5.008005"
          }
@@ -53,59 +54,59 @@
    "provides" : {
       "App::Followme" : {
          "file" : "lib/App/Followme.pm",
-         "version" : "1.00"
+         "version" : "1.01"
       },
       "App::Followme::ConvertPage" : {
          "file" : "lib/App/Followme/ConvertPage.pm",
-         "version" : "1.00"
+         "version" : "1.01"
       },
       "App::Followme::CreateIndex" : {
          "file" : "lib/App/Followme/CreateIndex.pm",
-         "version" : "1.00"
+         "version" : "1.01"
       },
       "App::Followme::CreateNews" : {
          "file" : "lib/App/Followme/CreateNews.pm",
-         "version" : "1.00"
+         "version" : "1.01"
       },
       "App::Followme::EveryFile" : {
          "file" : "lib/App/Followme/EveryFile.pm",
-         "version" : "1.00"
+         "version" : "1.01"
       },
       "App::Followme::FormatPage" : {
          "file" : "lib/App/Followme/FormatPage.pm",
-         "version" : "1.00"
+         "version" : "1.01"
       },
       "App::Followme::HandleSite" : {
          "file" : "lib/App/Followme/HandleSite.pm",
-         "version" : "1.00"
+         "version" : "1.01"
       },
       "App::Followme::Initialize" : {
          "file" : "lib/App/Followme/Initialize.pm",
-         "version" : "1.00"
+         "version" : "1.01"
       },
       "App::Followme::Mock" : {
          "file" : "lib/App/Followme/Mock.pm",
-         "version" : "1.00"
+         "version" : "1.01"
       },
       "App::Followme::MostRecentFile" : {
          "file" : "lib/App/Followme/MostRecentFile.pm",
-         "version" : "1.00"
+         "version" : "1.01"
       },
       "App::Followme::UploadFtp" : {
          "file" : "lib/App/Followme/UploadFtp.pm",
-         "version" : "1.00"
+         "version" : "1.01"
       },
       "App::Followme::UploadNone" : {
          "file" : "lib/App/Followme/UploadNone.pm",
-         "version" : "1.00"
+         "version" : "1.01"
       },
       "App::Followme::UploadSite" : {
          "file" : "lib/App/Followme/UploadSite.pm",
-         "version" : "1.00"
+         "version" : "1.01"
       },
       "App::Followme::Variables" : {
          "file" : "lib/App/Followme/Variables.pm",
-         "version" : "1.00"
+         "version" : "1.01"
       }
    },
    "release_status" : "stable",
@@ -119,5 +120,5 @@
          "web" : "https://github.com/Jinzang/App-Followme"
       }
    },
-   "version" : "1.00"
+   "version" : "1.01"
 }
