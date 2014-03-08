@@ -8,11 +8,11 @@ lib/App/Followme.pm
 lib/App/Followme/ConvertPage.pm
 lib/App/Followme/CreateIndex.pm
 lib/App/Followme/CreateNews.pm
+lib/App/Followme/CreateSitemap.pm
 lib/App/Followme/EveryFile.pm
 lib/App/Followme/FormatPage.pm
 lib/App/Followme/HandleSite.pm
 lib/App/Followme/Initialize.pm
-lib/App/Followme/Mock.pm
 lib/App/Followme/MostRecentFile.pm
 lib/App/Followme/UploadFtp.pm
 lib/App/Followme/UploadNone.pm
@@ -23,6 +23,7 @@ share/followme.el
 t/ConvertPage.t
 t/CreateIndex.t
 t/CreateNews.t
+t/CreateSitemap.t
 t/EveryFile.t
 t/Followme.t
 t/FormatPage.t

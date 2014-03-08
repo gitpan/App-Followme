@@ -9,7 +9,7 @@ use Cwd;
 use IO::Dir;
 use File::Spec::Functions qw(rel2abs catfile splitdir no_upwards);
 
-our $VERSION = "1.02";
+our $VERSION = "1.03";
 
 #----------------------------------------------------------------------
 # Create object that returns files in a directory tree
@@ -160,6 +160,8 @@ sub read_page {
 
 sub same_file {
     my ($self, $filename1, $filename2) = @_;
+    
+    return unless defined $filename1 && defined $filename2;
     
     my @path1 = splitdir(rel2abs($filename1));
     my @path2 = splitdir(rel2abs($filename2));

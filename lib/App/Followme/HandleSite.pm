@@ -13,7 +13,7 @@ use lib '../..';
 
 use base qw(App::Followme::Variables);
 
-our $VERSION = "1.02";
+our $VERSION = "1.03";
 
 use constant COMMAND_START => '<!-- ';
 use constant COMMAND_END => '-->';
@@ -255,7 +255,7 @@ sub get_command {
 
 sub get_excluded_directories {
     my ($self) = @_;
-    return [$self->{excluded_directory}];
+    return [$self->{template_directory}];
 }
 
 #----------------------------------------------------------------------
