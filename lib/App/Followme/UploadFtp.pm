@@ -4,32 +4,27 @@ use 5.008005;
 use strict;
 use warnings;
 
-use lib '..';
+use lib '../..';
 
-use base qw(App::Followme::EveryFile);
+use base qw(App::Followme::ConfiguredObject);
 
 use Net::FTP;
 use File::Spec::Functions qw(abs2rel splitdir catfile);
 
-our $VERSION = "1.03";
+our $VERSION = "1.04";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
 
 sub parameters {
-    my ($pkg) = @_;
+    my ($self) = @_;
     
-    my %parameters = (
-                      ftp_url => '',
-                      ftp_directory => '',
-                      ftp_debug => 0,
-                      remote_pkg => 'File::Spec::Unix',
-                     );
-
-    my %base_params = $pkg->SUPER::parameters();
-    %parameters = (%base_params, %parameters);
-
-    return %parameters;
+    return (
+            ftp_url => '',
+            ftp_directory => '',
+            ftp_debug => 0,
+            remote_pkg => 'File::Spec::Unix',
+           );
 }
 
 #----------------------------------------------------------------------
@@ -185,7 +180,7 @@ sub setup {
     my $remote_pkg = $self->{remote_pkg};
     eval "require $remote_pkg" or die "Module not found: $remote_pkg\n";
     
-    return $self;
+    return;
 }
 
 1;
@@ -238,7 +233,7 @@ Delete a file on the remote site. .
 
 Close the ftp connection to the remote site.
 
-=item $self = $self->setup($configuration);
+=item $self->setup($configuration);
 
 Open the ftp connection. The configuration is a reference to
 a hash, which includes the user name and password used in the connection.

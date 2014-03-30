@@ -4,16 +4,16 @@ use 5.008005;
 use strict;
 use warnings;
 
-use lib '..';
+use lib '../..';
 
-use base qw(App::Followme::HandleSite);
+use base qw(App::Followme::Module);
 
 use Cwd;
 use IO::File;
 use Digest::MD5 qw(md5_hex);
 use File::Spec::Functions qw(abs2rel splitdir catfile);
 
-our $VERSION = "1.03";
+our $VERSION = "1.04";
 
 use constant SEED => 96;
 
@@ -21,21 +21,17 @@ use constant SEED => 96;
 # Read the default parameter values
 
 sub parameters {
-    my ($pkg) = @_;
+    my ($self) = @_;
     
-    my %parameters = (
-                      verbose => 0,
-                      no_upload => 0,
-                      max_errors => 5,
-                      hash_file => 'upload.hash',
-                      credentials => 'upload.cred',
-                      upload_pkg => 'App::Followme::UploadFtp',
-                     );
+    return (
+            verbose => 0,
+            no_upload => 0,
+            max_errors => 5,
+            hash_file => 'upload.hash',
+            credentials => 'upload.cred',
+            upload_pkg => 'App::Followme::UploadFtp',
+           );
 
-    my %base_params = $pkg->SUPER::parameters();
-    %parameters = (%base_params, %parameters);
-
-    return %parameters;
 }
 
 #----------------------------------------------------------------------
@@ -252,10 +248,6 @@ sub read_word {
 sub setup {
     my ($self, $configuration) = @_;
 
-    # Perform setup in parent class
-    
-    $self->SUPER::setup($configuration);
-    
     # Add the remote user name and password to the configuration
     # They are not stored in the configuration, so they will not
     #  be in the clear
@@ -273,7 +265,7 @@ sub setup {
     # to select which files to test
     $self->{target_date} = 0;
 
-    return $self;
+    return;
 }
 
 #----------------------------------------------------------------------
@@ -325,6 +317,8 @@ sub update_folder {
     # Check each of the files in the directory
     
     foreach my $filename (@$filenames) {
+        next unless $self->match_file($filename);
+
         # Skip check if in quick mode and modification date is old
         
         if ($self->{quick_update}) {
@@ -354,6 +348,7 @@ sub update_folder {
     # Recursively check each of the subdirectories
     
     foreach my $subdirectory (@$directories) {
+        next unless $self->search_directory($subdirectory);
         $self->update_folder($subdirectory, $hash, $local);
     }
 

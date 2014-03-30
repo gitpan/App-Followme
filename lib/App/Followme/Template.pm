@@ -1,4 +1,4 @@
-package App::Followme::HandleSite;
+package App::Followme::Template;
 
 use 5.008005;
 use strict;
@@ -11,28 +11,12 @@ use File::Spec::Functions qw(abs2rel catfile rel2abs splitdir);
 
 use lib '../..';
 
-use base qw(App::Followme::Variables);
+use base qw(App::Followme::ConfiguredObject);
 
-our $VERSION = "1.03";
+our $VERSION = "1.04";
 
 use constant COMMAND_START => '<!-- ';
 use constant COMMAND_END => '-->';
-
-#----------------------------------------------------------------------
-# Set default parameters for package
-
-sub parameters {
-    my ($pkg) = @_;
-
-    my %parameters = (
-                      template_directory => 'templates',
-                     );
-
-    my %base_params = $pkg->SUPER::parameters();
-    %parameters = (%base_params, %parameters);
-
-    return %parameters;
-}
 
 #----------------------------------------------------------------------
 # Coerce a value to the type indicated by the sigil
@@ -94,8 +78,12 @@ sub compile {
     my @block;
     my $sections = {};
     while (my $template = pop(@templates)) {
-        my $page = $self->read_page($template);
-        my @lines = split(/\n/, $page);
+        my $fd = IO::File->new($template, 'r');
+        die "Cannot read $template: $!\n" unless $fd;
+    
+        my @lines = <$fd>;
+        close($fd);
+
         @block = $self->parse_block($sections, \@lines, '');
     }
 
@@ -200,33 +188,6 @@ sub fill_in {
 }
 
 #----------------------------------------------------------------------
-# Find an file to serve as a prototype for updating other files
-
-sub find_prototype {
-    my ($self, $directory, $uplevel) = @_;
-
-    $uplevel = 0 unless defined $uplevel;
-    my @path = splitdir(abs2rel($directory, $self->{top_directory}));
-
-    for (;;) {
-        my $dir = catfile($self->{top_directory}, @path);
-
-        if ($uplevel) {
-            $uplevel -= 1;
-        } else {
-            my $mrf = App::Followme::MostRecentFile->new($self);
-            my $filename = $mrf->run($dir);
-            return $filename if $filename;
-        }
-
-        last unless @path;
-        pop(@path);
-    }
-
-    return;
-}
-
-#----------------------------------------------------------------------
 # Get the translation of a template command
 
 sub get_command {
@@ -251,33 +212,6 @@ sub get_command {
 }
 
 #----------------------------------------------------------------------
-# Get the list of excluded files
-
-sub get_excluded_directories {
-    my ($self) = @_;
-    return [$self->{template_directory}];
-}
-
-#----------------------------------------------------------------------
-# Get the full template name (stub)
-
-sub get_template_name {
-    my ($self, $template_file) = @_;
-
-    my @directories = ($self->{base_directory});
-    push(@directories, $self->full_file_name($self->{top_directory},
-                                             $self->{template_directory}));
-
-    foreach my $directory (@directories) {
-        my $template_name = $self->full_file_name($directory,
-                                                  $template_file);
-        return $template_name if -e $template_name;
-    }
-
-    die "Couldn't find template: $template_file\n";
-}
-
-#----------------------------------------------------------------------
 # Initialize the data stack
 
 sub init_stack {
@@ -285,29 +219,6 @@ sub init_stack {
 
     $self->{stack} = [];
     return;
-}
-
-#----------------------------------------------------------------------
-# Is the target newer than any source file?
-
-sub is_newer {
-    my ($self, $target, @sources) = @_;
-    
-    my $target_date = 0;   
-    if (-e $target) {
-        my @stats = stat($target);  
-        $target_date = $stats[9];
-    }
-    
-    foreach my $source (@sources) {
-        next unless -e $source;
-
-        my @stats = stat($source);  
-        my $source_date = $stats[9];
-        return if $source_date >= $target_date;
-    }
-
-    return 1;
 }
 
 #----------------------------------------------------------------------
@@ -320,25 +231,6 @@ sub is_singleton {
 }
 
 #----------------------------------------------------------------------
-# Combine template with prototype and compile to subroutine
-
-sub make_template {
-    my ($self, $directory, $template_file) = @_;
-
-    my $template_name = $self->get_template_name($template_file);
-    my $prototype_name = $self->find_prototype($directory);
-
-    my $sub;
-    if (defined $prototype_name) {
-        $sub = $self->compile($prototype_name, $template_name);
-    } else {
-        $sub = $self->compile($template_name);
-    }
-
-    return $sub;
-}
-
-#----------------------------------------------------------------------
 # Read and check the template files
 
 sub parse_block {
@@ -346,8 +238,6 @@ sub parse_block {
 
     my @block;
     while (defined (my $line = shift @$lines)) {
-        $line .= "\n";
-
         my ($cmd, $arg) = $self->parse_command($line);
 
         if (defined $cmd) {
@@ -542,6 +432,18 @@ sub render {
 }
 
 #----------------------------------------------------------------------
+# Set the regular expression patterns used to match a command
+
+sub setup {
+    my ($self, $configuration) = @_;
+
+    $self->{command_start_pattern} = '^\s*' . quotemeta(COMMAND_START);
+    $self->{command_end_pattern} = '\s*' . quotemeta(COMMAND_END) . '\s*$';
+
+    return;
+}
+
+#----------------------------------------------------------------------
 # Generate code for the set command, which stores results in the hashlist
 
 sub set_command {
@@ -551,21 +453,6 @@ sub set_command {
     $expr = $self->encode_expression($expr);
 
     return "\$self->store_stack(\'$var\', ($expr));\n";
-}
-
-#----------------------------------------------------------------------
-# Set the regular expression patterns used to match a command
-
-sub setup {
-    my ($self, $configuration) = @_;
-
-    $self->{command_start_pattern} = '^\s*' . quotemeta(COMMAND_START);
-    $self->{command_end_pattern} = '\s*' . quotemeta(COMMAND_END) . '\s*$';
-
-    $self->{excluded_directory} = catfile($self->{top_directory},
-                                          $self->{template_directory});
-
-    return $self;
 }
 
 #----------------------------------------------------------------------
@@ -607,68 +494,40 @@ sub store_stack {
 
 =head1 NAME
 
-App::Followme::HandleSite - Handle templates and prototype files
+App::Followme::Template - Handle templates and prototype files
 
 =head1 SYNOPSIS
 
-    use App::Followme::HandleSite;
-    my $hs = App::Followme::new->new;
-    my $render = $hs->make_template($directory, $template_file);
+    use App::Followme::Template;
+    my $template = App::Followme::Template->new;
+    my $render = $template->compile($prototype_file, $template_file);
     my $output = $render->($hash);
-    my $prototype = $hs->find_prototype($directory, 0);
-    my $test = $hs->is_newer($prototype, @filenames);
 
 =head1 DESCRIPTION
 
-This module contains the methods that perform template and prototype handling.
-A Template is a file containing commands and variables for making a web page.
-First, the template is compiled into a subroutine and then the subroutine is
-called with a hash as an argument to fill in the variables and produce a web
-page. A prototype is the most recently modified web page in a directory. It is
-combined with the template so that the web page has the same look as the other
-pages in the directory.
-
+This module contains the methods that perform template handling. A Template is a
+file containing commands and variables for making a web page. First, the
+template is compiled into a subroutine and then the subroutine is called with a
+hash as an argument to fill in the variables and produce a web
+page.
 
 =head1 METHODS
 
-This module has three public methods.
+This module has one public method:
 
 =over 4
 
-=item $test = $self->is_newer($target, @sources);
+=item $sub = $self->compile($prototype_file, $template_file);
 
-Compare the modification date of the target file to the modification dates of
-the source files. If the target file is newer than all of the sources, return
-1 (true).
-
-=item $filename = $self->find_prototype($directory, $uplevel);
-
-Return the name of the most recently modified web page in a directory. If
-$uplevel is defined, search that many directory levels up from the directory
-passed as the first argument.
-
-=item $sub = $self->make_template($directory, $template_name);
-
-Combine a prototype and template, compile them, and return the compiled
-subroutine. The prototype is the most recently modified file in the directory
-passed as the first argument. The method searches for the template file first
-in the directory and if it is not found there, in the templates folder, which
-is an object parameter,
-
-The data supplied to the subroutine should
-be a hash reference. fields in the hash are substituted into variables in the
-template. Variables in the template are preceded by Perl sigils, so that a
-link would look like:
+Combine a prototype file and a template, compile them, and return the compiled
+subroutine. The prototype is the most recently modified file in the directory. A
+template if a file containing commands and variables that describe how data is to
+be represented. The method returns a subroutine reference, which when called
+with a reference to a hash, returns a web page containing the data in the hash.
+fields in the hash are substituted into variables in the template. Variables in
+the template are preceded by Perl sigils, so that a link would look like:
 
     <li><a href="$url">$title</a></li>
-
-The data hash may contain a list of hashes, which the modules in App::Followme
-name loop. Text in between for and endfor comments will be repeated for each
-hash in the list and each hash will be interpolated into the text. For comments
-look like
-
-    <!-- for @loop -->
-    <!-- endloop -->
 
 =back
 
@@ -753,12 +612,12 @@ Expand the text between the "for" and "endfor" commands several times. The
 name should be a reference to a list. It will expand the text in the for block
 once for each element in the list. Within the "for" block, any element of the list
 is accessible. This is especially useful for displaying lists of hashes. For
-example, suppose the data field name PHONELIST points to an array. This array is
-a list of hashes, and each hash has two entries, NAME and PHONE. Then the code
+example, suppose the data field name phonelist points to an array. This array is
+a list of hashes, and each hash has two entries, name and phone. Then the code
 
-    <!-- for @PHONELIST -->
-    <p>$NAME<br>
-    $PHONE</p>
+    <!-- for @phonelist -->
+    <p>$name<br>
+    $phone</p>
     <!-- endfor -->
 
 displays the entire phone list.

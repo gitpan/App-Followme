@@ -4,21 +4,12 @@ use 5.008005;
 use strict;
 use warnings;
 
-use lib '..';
+use lib '../..';
 
-use base qw(App::Followme::EveryFile);
+use base qw(App::Followme::ConfiguredObject);
 
 
-our $VERSION = "1.03";
-
-#----------------------------------------------------------------------
-# Read the default parameter values
-
-sub parameters {
-    my ($pkg) = @_;
-    
-    return $pkg->SUPER::parameters();
-}
+our $VERSION = "1.04";
 
 #----------------------------------------------------------------------
 # Add a directory to the remote site
@@ -66,14 +57,6 @@ sub delete_file {
 sub open {
     my ($self, $user, $password) = @_;
     return;
-}
-
-#----------------------------------------------------------------------
-# Open the ftp connection
-
-sub setup {
-    my ($self, $configuration) = @_;
-    return $self;
 }
 
 1;
@@ -134,7 +117,7 @@ Delete a file on the remote site.
 
 Open the connection to the remote site
 
-=item $self = $self->setup();
+=item $self->setup();
 
 Set up computed fields in the new object
 

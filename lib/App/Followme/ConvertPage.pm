@@ -5,32 +5,26 @@ use warnings;
 
 use lib '../..';
 
-use base qw(App::Followme::HandleSite);
+use base qw(App::Followme::Module);
+
 use Text::Markdown;
 use File::Spec::Functions qw(catfile);
-use App::Followme::MostRecentFile;
 
-our $VERSION = "1.03";
+our $VERSION = "1.04";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
 
 sub parameters {
-    my ($pkg) = @_;
+    my ($self) = @_;
     
-    my %parameters = (
-            quick_update => 0,
+    return (
             text_extension => 'md',
             page_template => 'page.htm',
             empty_element_suffix => '/>',
             tab_width => 4,
             trust_list_start_value => 0,
     );
-
-    my %base_params = $pkg->SUPER::parameters();
-    %parameters = (%base_params, %parameters);
-
-    return %parameters;
 }
 
 #----------------------------------------------------------------------
@@ -41,8 +35,10 @@ sub run {
 
     my $render = $self->make_template($directory, $self->{page_template});
     my ($filenames, $directories) = $self->visit($directory);
-
+    
     foreach my $filename (@$filenames) {
+        next unless $self->match_file($filename);
+
         eval {$self->convert_a_file($render, $directory, $filename)};
         warn "$filename: $@" if $@;
     }
@@ -50,6 +46,7 @@ sub run {
     return if $self->{quick_update};
     
     foreach my $directory (@$directories) {
+        next unless $self->search_directory($directory);
         $self->run($directory);
     }
     
@@ -101,7 +98,7 @@ sub internal_fields {
 # Create markdown object and add it to self
 
 sub setup {
-    my ($self) = @_;
+    my ($self, $configuration) = @_;
 
     my %params;
     for my $field (qw(empty_element_suffix tab_width
@@ -110,9 +107,8 @@ sub setup {
     }
 
     $self->{md} = Text::Markdown->new(%params);
-    $self->SUPER::setup();
 
-    return $self;
+    return;
 }
 
 1;
@@ -122,7 +118,7 @@ __END__
 
 =head1 NAME
 
-App::Followme - Simple static web site maintenance
+App::Followme::ConvertPage - Convert Markdown files to html
 
 =head1 SYNOPSIS
 
@@ -132,22 +128,26 @@ App::Followme - Simple static web site maintenance
 
 =head1 DESCRIPTION
 
-If there are any text files in the directory, they are converted into html files
-by substituting the content into a template. After the conversion the original
-file is deleted. Along with the content, other variables are calculated from the
-file name and modification date. Variables in the template are surrounded by
-double braces, so that a link would look like:
+If there are any markdown files in the directory, they are converted into html
+files by substituting the content into a template. After the conversion the
+original file is deleted. Markdown files are identified by their extension,
+which by default is 'md'.
 
-    <li><a href="{{url}}">{{title}}</a></li>
+Along with the content, other variables are calculated from the file name and
+modification date. Variables in the template are preceded by a sigil, most usually
+a dollar sign. Thus a link would look like:
 
-The variables that are calculated for a text file are:
+    <li><a href="$url">$title</a></li>
+
+The variables that are calculated for each markdown file are:
 
 =over 4
 
 =item body
 
-All the content of the text file. Markdown is called on the file's content to
-generate html before being stored in the body variable. 
+All the contents of the file, minus the title if there is one. Markdown is
+called on the file's content to generate html before being stored in the body
+variable. 
 
 =item title
 
@@ -159,6 +159,10 @@ file content, or the filename, if it is not.
 The variables calculated from the modification time are: C<weekday, month,>
 C<monthnum, day, year, hour24, hour, ampm, minute,> and C<second.>
 
+=item url
+
+The url of the html file built from the Markdown file.
+
 =back
 
 =head1 CONFIGURATION
@@ -169,11 +173,17 @@ The following parameters are used from the configuration:
 
 =item page_template
 
-The path to the template used to create a page, relative to the top directory.
+The name of the template file. The template file is either in the same
+directory as the configuration file used to invoke this method, or if not
+there, in the templates subdirectory.
 
 =item text_extension 
 
-The extension of files that are converted to web pages.
+The extension of files that are converted to web pages. The default value
+is md.
+
+The remaining parameters are passed unchanged to L<Text::Markdown>. You
+should not need to change them.
 
 =back
 

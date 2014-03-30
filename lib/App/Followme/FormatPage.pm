@@ -5,12 +5,12 @@ use warnings;
 
 use lib '../..';
 
-use base qw(App::Followme::HandleSite);
+use base qw(App::Followme::Module);
 
 use Digest::MD5 qw(md5_hex);
 use File::Spec::Functions qw(abs2rel rel2abs splitdir catfile);
 
-our $VERSION = "1.03";
+our $VERSION = "1.04";
 
 #----------------------------------------------------------------------
 # Return all the files in a subtree (example)
@@ -206,10 +206,12 @@ sub update_directory {
     # The first update uses a file from the directory above
     # as a prototype, if one is found
 
+    my $prototype_file;
     unless (defined $prototype) {
-        my $prototype_file = shift(@$filenames);  
+        my $pattern = $self->get_included_files();
+        $prototype_file = $self->most_recent_file($directory, $pattern);
 
-        if (defined $prototype_file) {
+        if ($prototype_file) {
             $prototype_path = $self->get_prototype_path($prototype_file);
             $prototype = $self->read_page($prototype_file);
         }
@@ -218,6 +220,9 @@ sub update_directory {
     my $count = 0;
     my $changes = 0;
     foreach my $filename (@$filenames) {
+        next unless $self->match_file($filename);
+        next if defined $prototype_file && $filename eq $prototype_file;
+
         my $page = $self->read_page($filename);
         die "Couldn't read $filename" unless defined $page;
 
@@ -253,6 +258,7 @@ sub update_directory {
     return unless $changes;
 
     for my $subdirectory (@$directories) {
+        next unless $self->search_directory($directory);
         $self->update_directory($subdirectory, $prototype, $prototype_path);
     }
 
@@ -332,7 +338,7 @@ Each page updated by substituting all its named blocks into corresponding block
 in the changed page. The effect is that all the text outside the named blocks
 are updated to be the same across all the web pages.
 
-Updates to the named block can also be made conditional by adding an in after
+Updates to the named block can also be made conditional by adding an "in" after
 the section name. If the folder name after the "in" is included in the
 prototype_path hash, then the block tags are ignored, it is as if the block does
 not exist. The block is considered as part of the constant portion of the

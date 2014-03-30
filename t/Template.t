@@ -1,7 +1,7 @@
 #!/usr/bin/env perl
 use strict;
 
-use Test::More tests => 45;
+use Test::More tests => 37;
 
 use File::Path qw(rmtree);
 use File::Spec::Functions qw(catdir catfile rel2abs splitdir);
@@ -16,7 +16,8 @@ pop(@path);
 my $lib = catdir(@path, 'lib');
 unshift(@INC, $lib);
 
-require App::Followme::HandleSite;
+require App::Followme::Template;
+require App::Followme::Module;
 
 my $test_dir = catdir(@path, 'test');
 
@@ -26,9 +27,9 @@ mkdir $test_dir;
 #----------------------------------------------------------------------
 # Create object
 
-my $pp = App::Followme::HandleSite->new();
-isa_ok($pp, "App::Followme::HandleSite"); # test 1
-can_ok($pp, qw(new make_template)); # test 2
+my $pp = App::Followme::Template->new();
+isa_ok($pp, "App::Followme::Template"); # test 1
+can_ok($pp, qw(new compile)); # test 2
 
 #----------------------------------------------------------------------
 # Test render
@@ -112,7 +113,8 @@ EOQ
 
 my $sections = {};
 my @lines = split(/\n/, $template);
-my @ok = map {"$_\n"} @lines;
+@lines = map {"$_\n"} @lines;
+my @ok = @lines;
 
 my @block = $pp->parse_block($sections, \@lines, '');
 my @sections = sort keys %$sections;
@@ -134,8 +136,12 @@ Another Footer
 EOQ
 
 @lines = split(/\n/, $template);
+@lines = map {"$_\n"} @lines;
+
 my @sublines = split(/\n/, $subtemplate);
-@ok = map {"$_\n"} @lines;
+@sublines = map {"$_\n"} @sublines;
+
+@ok = @lines;
 $ok[1] = "Another Header\n";
 $ok[-2] = "Another Footer\n";
 
@@ -153,12 +159,13 @@ is_deeply($sections->{header}, ["Another Header\n"],
 my $template_name = catfile($test_dir, 'template.htm');
 my $subtemplate_name = catfile($test_dir, 'subtemplate.htm');
 
-$pp->write_page($template_name, $template);
-my $test_template = $pp->read_page($template_name);
+my $hs = App::Followme::Module->new();
+$hs->write_page($template_name, $template);
+my $test_template = $hs->read_page($template_name);
 is($test_template, $template, 'Read and write template'); # test 24
 
-$pp->write_page($subtemplate_name, $subtemplate);
-my $test_subtemplate = $pp->read_page($subtemplate_name);
+$hs->write_page($subtemplate_name, $subtemplate);
+my $test_subtemplate = $hs->read_page($subtemplate_name);
 is($test_subtemplate, $subtemplate, 'Read and write subtemplate'); # test 25
 
 my $sub = $pp->compile($template_name, $subtemplate_name);
@@ -185,8 +192,8 @@ $pp->{keep_sections} = 1;
 @block = $pp->parse_block($sections, \@sublines, '');
 @block = $pp->parse_block($sections, \@lines, '');
 
-is($block[0], "<!-- section header extra -->\n", "Section start teag"); # test 28
-is($block[2], "<!-- endsection header -->\n", "Section end teag"); # test 29
+is($block[0], "<!-- section header extra -->", "Section start teag"); # test 28
+is($block[2], "<!-- endsection header -->", "Section end teag"); # test 29
 
 $sub = $pp->compile($template_name, $subtemplate_name);
 is(ref $sub, 'CODE', "compiled template"); # test 30
@@ -206,57 +213,6 @@ EOQ
 is($text, $text_ok, "Run compiled template"); # test 31
 
 #----------------------------------------------------------------------
-# Test is newer?
-
-do {
-   my $code = <<'EOQ';
-<html>
-<head>
-<meta name="robots" content="archive">
-<!-- section meta -->
-<title>%%</title>
-<!-- endsection meta -->
-</head>
-<body>
-<!-- section content -->
-<h1>%%</h1>
-<!-- endsection content -->
-<!-- section navigation in folder -->
-<p><a href="">Link</a></p>
-<!-- endsection navigation -->
-</body>
-</html>
-EOQ
-
-    chdir($test_dir);
-    my $hs = App::Followme::HandleSite->new;
-    
-    foreach my $count (qw(four three two one)) {
-        sleep(1);
-        my $output = $code;
-        $output =~ s/%%/Page $count/g;
-
-        my $filename = catfile($test_dir, "$count.html");
-        $hs->write_page($filename, $output);
-
-        my $input = $hs->read_page($filename);
-        is($input, $output, "Read and write page $filename"); #tests 32-35
-    }
-
-    my $newer = $hs->is_newer('three.html', 'two.html', 'one.html');
-    is($newer, undef, 'Source is  newer'); # test 36
-    
-    $newer = $hs->is_newer('one.html', 'two.html', 'three.html');
-    is($newer, 1, "Target is newer"); # test 37
-    
-    $newer = $hs->is_newer('five.html', 'one.html');
-    is($newer, undef, 'Target is undefined'); # test 38
-    
-    $newer = $hs->is_newer('six.html', 'five.html');
-    is($newer, 1, 'Source and target undefined'); # test 39
-};
-
-#----------------------------------------------------------------------
 # Test for loop
 
 $template = <<'EOQ';
@@ -265,9 +221,9 @@ $name $sep $phone
 <!-- endfor -->
 EOQ
 
-$pp->write_page($template_name, $template);
+$hs->write_page($template_name, $template);
 
-$sub = App::Followme::HandleSite->compile($template_name);
+$sub = App::Followme::Template->compile($template_name);
 $data = {sep => ':', list => [{name => 'Ann', phone => '4444'},
                               {name => 'Joe', phone => '5555'}]};
 
@@ -278,7 +234,7 @@ Ann : 4444
 Joe : 5555
 EOQ
 
-is($text, $text_ok, "For loop"); # test 40
+is($text, $text_ok, "For loop"); # test 32
 
 #----------------------------------------------------------------------
 # Test with block
@@ -291,9 +247,9 @@ $a $b
 $b
 EOQ
 
-$pp->write_page($template_name, $template);
+$hs->write_page($template_name, $template);
 
-$sub = App::Followme::HandleSite->compile($template_name);
+$sub = App::Followme::Template->compile($template_name);
 $data = {a=> 1, b => 2, hash => {a => 10, b => 20}};
 
 $text = $sub->($data);
@@ -304,7 +260,7 @@ $text_ok = <<'EOQ';
 2
 EOQ
 
-is($text, $text_ok, "With block"); # test 41
+is($text, $text_ok, "With block"); # test 33
 
 #----------------------------------------------------------------------
 # Test while loop
@@ -317,8 +273,8 @@ $count
 go
 EOQ
 
-$pp->write_page($template_name, $template);
-$sub = App::Followme::HandleSite->compile($template_name);
+$hs->write_page($template_name, $template);
+$sub = App::Followme::Template->compile($template_name);
 $data = {count => 3};
 
 $text = $sub->($data);
@@ -330,7 +286,7 @@ $text_ok = <<'EOQ';
 go
 EOQ
 
-is($text, $text_ok, "While loop"); # test 42
+is($text, $text_ok, "While loop"); # test 34
 
 #----------------------------------------------------------------------
 # Test if blocks
@@ -345,18 +301,18 @@ $template = <<'EOQ';
 <!-- endif -->
 EOQ
 
-$pp->write_page($template_name, $template);
-$sub = App::Followme::HandleSite->compile($template_name);
+$hs->write_page($template_name, $template);
+$sub = App::Followme::Template->compile($template_name);
 
 $data = {x => 1};
 $text = $sub->($data);
-is($text, "\$x is 1 (one)\n", "If block"); # test 43
+is($text, "\$x is 1 (one)\n", "If block"); # test 35
 
 $data = {x => 2};
 $text = $sub->($data);
-is($text, "\$x is 2 (two)\n", "Elsif block"); # test 44
+is($text, "\$x is 2 (two)\n", "Elsif block"); # test 36
 
 $data = {x => 3};
 $text = $sub->($data);
-is($text, "\$x is unknown\n", "Else block"); # test 45
+is($text, "\$x is unknown\n", "Else block"); # test 37
 
