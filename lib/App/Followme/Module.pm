@@ -14,7 +14,7 @@ use File::Spec::Functions qw(abs2rel catfile file_name_is_absolute
 
 use base qw(App::Followme::ConfiguredObject);
 
-our $VERSION = "1.05";
+our $VERSION = "1.06";
 
 use constant MONTHS => [qw(January February March April May June July
                            August September October November December)];
@@ -387,11 +387,11 @@ sub is_newer {
     
     foreach my $source (@sources) {
         next unless defined $source;
-        next unless -e $source;
         
         $source = catfile($source, "index.$self->{web_extension}")
             if -d $source;
 
+        next unless -e $source;
         next if $self->same_file($target, $source);
 
         my @stats = stat($source);  
@@ -399,7 +399,6 @@ sub is_newer {
         return if $source_date >= $target_date;
     }
 
-    #print "target newer\n";
     return 1;
 }
 
