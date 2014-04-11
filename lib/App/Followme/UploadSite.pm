@@ -13,7 +13,7 @@ use IO::File;
 use Digest::MD5 qw(md5_hex);
 use File::Spec::Functions qw(abs2rel splitdir catfile);
 
-our $VERSION = "1.06";
+our $VERSION = "1.07";
 
 use constant SEED => 96;
 
@@ -35,7 +35,7 @@ sub parameters {
 }
 
 #----------------------------------------------------------------------
-# Perform all updates on the directory
+# Upload changed files in a directory tree
 
 sub run {
     my ($self, $directory) = @_;
@@ -94,7 +94,7 @@ sub checksum_file {
 }
 
 #----------------------------------------------------------------------
-# Write a file to the remote site, creating any directories needed
+# Delete files on remote site when they are no longer on local site
 
 sub clean_files {
     my ($self, $hash, $local) = @_;

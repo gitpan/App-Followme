@@ -10,10 +10,10 @@ use base qw(App::Followme::Module);
 use Digest::MD5 qw(md5_hex);
 use File::Spec::Functions qw(abs2rel rel2abs splitdir catfile);
 
-our $VERSION = "1.06";
+our $VERSION = "1.07";
 
 #----------------------------------------------------------------------
-# Return all the files in a subtree (example)
+# Modify pages to match the most recently modified page
 
 sub run {
     my ($self, $directory) = @_;
@@ -313,7 +313,7 @@ __END__
 
 =head1 NAME
 
-App::Followme::FormatPages - Simple static web site maintenance
+App::Followme::FormatPages - Modify pages in a directory to match a prototype
 
 =head1 SYNOPSIS
 

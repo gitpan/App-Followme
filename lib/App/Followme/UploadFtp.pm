@@ -11,7 +11,7 @@ use base qw(App::Followme::ConfiguredObject);
 use Net::FTP;
 use File::Spec::Functions qw(abs2rel splitdir catfile);
 
-our $VERSION = "1.06";
+our $VERSION = "1.07";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
@@ -232,11 +232,6 @@ Delete a file on the remote site. .
 =item $self->close();
 
 Close the ftp connection to the remote site.
-
-=item $self->setup($configuration);
-
-Open the ftp connection. The configuration is a reference to
-a hash, which includes the user name and password used in the connection.
 
 =back
 

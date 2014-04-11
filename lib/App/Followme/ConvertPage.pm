@@ -10,7 +10,7 @@ use base qw(App::Followme::Module);
 use Text::Markdown;
 use File::Spec::Functions qw(catfile);
 
-our $VERSION = "1.06";
+our $VERSION = "1.07";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
@@ -28,7 +28,7 @@ sub parameters {
 }
 
 #----------------------------------------------------------------------
-# Return all the files in a subtree (example)
+# Convert markdown files to html
 
 sub run {
     my ($self, $directory) = @_;
@@ -151,8 +151,8 @@ variable.
 
 =item title
 
-The title of the page is derived from the header, if one is at the front of the
-file content, or the filename, if it is not.
+The title of the page is derived from contents of the top header tag, if one is
+at the front of the file content, or the filename, if it is not.
 
 =item time fields
 

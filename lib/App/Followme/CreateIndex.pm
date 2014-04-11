@@ -11,7 +11,7 @@ use Cwd;
 use IO::Dir;
 use File::Spec::Functions qw(abs2rel rel2abs splitdir catfile no_upwards);
 
-our $VERSION = "1.06";
+our $VERSION = "1.07";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
@@ -28,7 +28,7 @@ sub parameters {
 }
 
 #----------------------------------------------------------------------
-# Return all the files in a subtree (example)
+#  Create an index to all files in a directory with a specified extension
 
 sub run {
     my ($self, $directory) = @_;
