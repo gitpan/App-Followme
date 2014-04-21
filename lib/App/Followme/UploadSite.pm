@@ -13,7 +13,7 @@ use IO::File;
 use Digest::MD5 qw(md5_hex);
 use File::Spec::Functions qw(abs2rel splitdir catfile);
 
-our $VERSION = "1.07";
+our $VERSION = "1.08";
 
 use constant SEED => 96;
 
@@ -104,9 +104,9 @@ sub clean_files {
     foreach my $filename (@filenames) {
         my $flag;
         if ($hash->{$filename} eq 'dir') {
-            $flag = $self->{uplader}->delete_directory($filename);            
+            $flag = $self->{uploader}->delete_directory($filename);            
         } else {
-            $flag = $self->{uplader}->delete_file($filename);                        
+            $flag = $self->{uploader}->delete_file($filename);                        
         }
 
         if ($flag) {

@@ -54,55 +54,55 @@
    "provides" : {
       "App::Followme" : {
          "file" : "lib/App/Followme.pm",
-         "version" : "1.07"
+         "version" : "1.08"
       },
       "App::Followme::ConfiguredObject" : {
          "file" : "lib/App/Followme/ConfiguredObject.pm",
-         "version" : "1.07"
+         "version" : "1.08"
       },
       "App::Followme::ConvertPage" : {
          "file" : "lib/App/Followme/ConvertPage.pm",
-         "version" : "1.07"
+         "version" : "1.08"
       },
       "App::Followme::CreateIndex" : {
          "file" : "lib/App/Followme/CreateIndex.pm",
-         "version" : "1.07"
+         "version" : "1.08"
       },
       "App::Followme::CreateNews" : {
          "file" : "lib/App/Followme/CreateNews.pm",
-         "version" : "1.07"
+         "version" : "1.08"
       },
       "App::Followme::CreateSitemap" : {
          "file" : "lib/App/Followme/CreateSitemap.pm",
-         "version" : "1.07"
+         "version" : "1.08"
       },
       "App::Followme::FormatPage" : {
          "file" : "lib/App/Followme/FormatPage.pm",
-         "version" : "1.07"
+         "version" : "1.08"
       },
       "App::Followme::Initialize" : {
          "file" : "lib/App/Followme/Initialize.pm",
-         "version" : "1.07"
+         "version" : "1.08"
       },
       "App::Followme::Module" : {
          "file" : "lib/App/Followme/Module.pm",
-         "version" : "1.07"
+         "version" : "1.08"
       },
       "App::Followme::Template" : {
          "file" : "lib/App/Followme/Template.pm",
-         "version" : "1.07"
+         "version" : "1.08"
       },
       "App::Followme::UploadFtp" : {
          "file" : "lib/App/Followme/UploadFtp.pm",
-         "version" : "1.07"
+         "version" : "1.08"
       },
       "App::Followme::UploadNone" : {
          "file" : "lib/App/Followme/UploadNone.pm",
-         "version" : "1.07"
+         "version" : "1.08"
       },
       "App::Followme::UploadSite" : {
          "file" : "lib/App/Followme/UploadSite.pm",
-         "version" : "1.07"
+         "version" : "1.08"
       }
    },
    "release_status" : "stable",
@@ -116,5 +116,5 @@
          "web" : "https://github.com/Jinzang/App-Followme"
       }
    },
-   "version" : "1.07"
+   "version" : "1.08"
 }

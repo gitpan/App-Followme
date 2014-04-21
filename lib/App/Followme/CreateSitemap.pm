@@ -9,7 +9,7 @@ use lib '../..';
 use File::Spec::Functions qw(catfile);
 use base qw(App::Followme::Module);
 
-our $VERSION = "1.07";
+our $VERSION = "1.08";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
@@ -24,7 +24,7 @@ sub parameters {
 }
 
 #----------------------------------------------------------------------
-# Write a list of urls in a directory tress
+# Write a list of urls in a directory tree
 
 sub run {
     my ($self, $directory) = @_;
