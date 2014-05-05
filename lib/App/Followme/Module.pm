@@ -14,7 +14,7 @@ use File::Spec::Functions qw(abs2rel catfile file_name_is_absolute
 
 use base qw(App::Followme::ConfiguredObject);
 
-our $VERSION = "1.09";
+our $VERSION = "1.10";
 
 use constant MONTHS => [qw(January February March April May June July
                            August September October November December)];
@@ -406,18 +406,18 @@ sub is_newer {
 # Combine template with prototype and compile to subroutine
 
 sub make_template {
-    my ($self, $directory, $template_file) = @_;
+    my ($self, $filename, $template_file) = @_;
 
+    my ($directory, $base) = $self->split_filename($filename);
+    undef $filename unless -e $filename;
+    
     my $template_name = $self->get_template_name($template_file);
     my $prototype_name = $self->find_prototype($directory);
 
-    my $sub;
-    if (defined $prototype_name) {
-        $sub = $self->{template}->compile($prototype_name, $template_name);
-    } else {
-        $sub = $self->{template}->compile($template_name);
-    }
-
+    my @filenames = grep {defined $_}
+        ($prototype_name, $filename, $template_name);
+    
+    my $sub = $self->{template}->compile(@filenames);
     return $sub;
 }
 
@@ -646,7 +646,7 @@ App::Followme::Module - Base class for modules invoked from configuration
     my $test = $obj->is_newer($filename, $prototype);
     if ($test) {
         my $data = $obj->set_fields($directory, $filename);
-        my $sub = $obj->make_template($directory, $template_name);
+        my $sub = $obj->make_template($filename, $template_name);
         my $webppage = $sub->($data);
         print $webpage;
     }
@@ -711,17 +711,18 @@ Compare the modification date of the target file to the modification dates of
 the source files. If the target file is newer than all of the sources, return
 1 (true).
 
-=item $sub = $self->make_template($directory, $template_name);
+=item $sub = $self->make_template($filename, $template_name);
 
-Combine a prototype and template, compile them, and return the compiled
-subroutine. The prototype is the most recently modified file in the directory
-passed as the first argument. The method first searches for the template file 
-in the directory and if it is not found there, in the templates folder, which
-is an object parameter,
+Generate a compiled subroutine to render a file by combining a prototype, the
+current version of the file, and template. The prototype is the most recently
+modified file in the directory containing the filename passed as the first
+argument. The method first searches for the template file in the directory
+containing the filename and if it is not found there, in the templates folder,
+which is an object parameter,
 
-The data supplied to the subroutine should be a hash reference. fields in the
-hash are substituted into variables in the template. Variables in the template
-are preceded by Perl sigils, so that a link would look like:
+The data supplied to the compiled subroutine should be a hash reference. fields
+in the hash are substituted into variables in the template. Variables in the
+template are preceded by Perl sigils, so that a link would look like:
 
     <li><a href="$url">$title</a></li>
 

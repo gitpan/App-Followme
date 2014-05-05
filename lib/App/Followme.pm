@@ -12,7 +12,7 @@ use Cwd;
 use IO::File;
 use File::Spec::Functions qw(splitdir catfile);
 
-our $VERSION = "1.09";
+our $VERSION = "1.10";
 
 #----------------------------------------------------------------------
 # Read the default parameter values
@@ -77,10 +77,11 @@ sub find_configuration {
 sub load_and_run_modules {
     my ($self, $modules, $base_directory, $directory, %configuration) = @_;
 
+    $configuration{base_directory} = $base_directory;
     foreach my $module (@$modules) {
+        my ($pkg) = $module =~ /^(\w+(?:\:\:\w+)*)$/;
         eval "require $module" or die "Module not found: $module\n";
 
-        $configuration{base_directory} = $base_directory;
         my $object = $module->new(\%configuration);
         $object->run($directory);
     }

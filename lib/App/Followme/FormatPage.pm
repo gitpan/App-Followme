@@ -10,7 +10,7 @@ use base qw(App::Followme::Module);
 use Digest::MD5 qw(md5_hex);
 use File::Spec::Functions qw(abs2rel rel2abs splitdir catfile);
 
-our $VERSION = "1.09";
+our $VERSION = "1.10";
 
 #----------------------------------------------------------------------
 # Modify pages to match the most recently modified page
@@ -227,14 +227,22 @@ sub update_directory {
         die "Couldn't read $filename" unless defined $page;
 
         # Check for changes before updating page
-        my $skip = $self->unchanged_prototype($prototype, $page, $prototype_path);
+        my $skip;
+        eval {
+            $skip = $self->unchanged_prototype($prototype, $page,
+                                               $prototype_path);
+        };
+        die "$filename: $@" if $@;
 
         if ($skip) {
             last if $count;
             
         } else {    
-            $page = $self->update_page($prototype, $page, $prototype_path);
-        
+            eval {
+                $page = $self->update_page($prototype, $page, $prototype_path);
+            };
+            die "$filename: $@" if $@;
+
             my @stats = stat($filename);
             my $modtime = $stats[9];
         
