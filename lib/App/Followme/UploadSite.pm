@@ -13,7 +13,7 @@ use IO::File;
 use Digest::MD5 qw(md5_hex);
 use File::Spec::Functions qw(abs2rel splitdir catfile);
 
-our $VERSION = "1.10";
+our $VERSION = "1.11";
 
 use constant SEED => 96;
 
@@ -46,9 +46,15 @@ sub run {
     $self->{uploader}->open($user, $pass);
 
     eval {
+        my $old_directory = getcwd();
+        chdir($self->{top_directory})
+            or die "Can't cd to $self->{top_directory}";
+        
         $self->update_folder($self->{top_directory}, $hash, $local);
         $self->clean_files($hash, $local);    
         $self->{uploader}->close();
+        
+        chdir($old_directory);
     };
     
     my $error = $@;
@@ -83,13 +89,12 @@ sub checksum_file {
 
     my $fd = IO::File->new($filename, 'r');
     return '' unless $fd;
+    binmode($fd, ':raw');
     
     my $md5 = Digest::MD5->new;
-    foreach my $line (<$fd>) {
-        $md5->add($line);        
-    }
-
+    $md5->addfile($fd);
     close($fd);
+
     return $md5->hexdigest;
 }
 
